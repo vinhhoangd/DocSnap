@@ -118,13 +118,13 @@ final class DocSnapUITests: XCTestCase {
     func testRenameDocumentFromMenu() {
         openSampleDocument()
         app.buttons["documentMenu"].tap()
-        let rename = app.buttons["Rename"]
+        let rename = app.buttons["renameMenuItem"]
         XCTAssertTrue(rename.waitForExistence(timeout: 5))
         rename.tap()
 
         let alert = app.alerts["Rename"]
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
-        let field = alert.textFields.firstMatch
+        let field = alert.textFields.firstMatch // alert text fields don't expose SwiftUI identifiers
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         XCTAssertEqual(field.value as? String, "Sample Invoice", "Rename should start from the current title")
         field.tap()
@@ -140,13 +140,14 @@ final class DocSnapUITests: XCTestCase {
     func testReorderSheetOpensAndCloses() {
         openSampleDocument()
         app.buttons["documentMenu"].tap()
-        let reorder = app.buttons["Reorder Pages"]
+        let reorder = app.buttons["reorderMenuItem"]
         XCTAssertTrue(reorder.waitForExistence(timeout: 5))
         reorder.tap()
 
         XCTAssertTrue(app.navigationBars["Reorder Pages"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Page 1"].exists)
         XCTAssertTrue(app.staticTexts["Page 2"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["reorderRow"].firstMatch.exists)
         app.navigationBars["Reorder Pages"].buttons["Done"].tap()
         waitForDisappearance(app.navigationBars["Reorder Pages"])
         XCTAssertEqual(app.buttons.matching(identifier: "pageCell").count, 2)
@@ -158,7 +159,7 @@ final class DocSnapUITests: XCTestCase {
         openFirstPage()
         XCTAssertTrue(app.navigationBars["1 / 2"].exists)
         app.buttons["deletePageButton"].tap()
-        let confirm = app.buttons["Delete Page"]
+        let confirm = app.buttons["confirmDeletePageButton"].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))
         confirm.tap()
 
@@ -176,13 +177,13 @@ final class DocSnapUITests: XCTestCase {
             let delete = app.buttons["deletePageButton"]
             waitUntilEnabled(delete)
             delete.tap()
-            let confirm = app.buttons["Delete Page"]
+            let confirm = app.buttons["confirmDeletePageButton"].firstMatch
             XCTAssertTrue(confirm.waitForExistence(timeout: 5))
             confirm.tap()
             waitForDisappearance(confirm)
         }
         // With no pages left the viewer closes itself and the document shows its empty state.
-        XCTAssertTrue(app.staticTexts["No Pages"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["noPagesView"].firstMatch.waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["deletePageButton"].exists)
         XCTAssertFalse(app.buttons["shareButton"].isEnabled, "Share must be disabled for an empty document")
     }
@@ -191,8 +192,7 @@ final class DocSnapUITests: XCTestCase {
 
     func testSettingsSheetShowsPageSize() {
         XCTAssertTrue(documentRow.waitForExistence(timeout: 20))
-        // No accessibility identifier on the Settings toolbar button; its label is "Settings".
-        app.navigationBars["DocSnap"].buttons["Settings"].tap()
+        app.buttons["settingsButton"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
         XCTAssertTrue(element(labelContaining: "Page Size").waitForExistence(timeout: 5))
         XCTAssertTrue(element(labelContaining: "Default Filter").exists)
@@ -215,5 +215,46 @@ final class DocSnapUITests: XCTestCase {
 
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 10))
         XCTAssertTrue(documentRow.waitForExistence(timeout: 5), "Clearing the query should bring the document back")
+    }
+
+    // MARK: - Zoom and rotated crop
+
+    func testZoomedPageDoesNotSwipeToNextPage() {
+        openFirstPage()
+        XCTAssertTrue(app.navigationBars["1 / 2"].exists)
+        let page = app.descendants(matching: .any)["zoomablePage"].firstMatch
+        XCTAssertTrue(page.waitForExistence(timeout: 5))
+        page.doubleTap()
+        // Panning a zoomed page must not change pages.
+        page.swipeLeft()
+        XCTAssertTrue(app.navigationBars["1 / 2"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.navigationBars["2 / 2"].exists)
+        // Back at normal size, a swipe changes the page again.
+        page.doubleTap()
+        page.swipeLeft()
+        XCTAssertTrue(app.navigationBars["2 / 2"].waitForExistence(timeout: 5))
+    }
+
+    func testCropScreenShowsRotatedPageUpright() {
+        openFirstPage()
+        let window = app.windows.firstMatch.frame
+        // Unrotated: the original top-left corner handle sits in the left half of the screen.
+        app.buttons["cropButton"].tap()
+        let handle = app.descendants(matching: .any)["cropHandle0"].firstMatch
+        XCTAssertTrue(handle.waitForExistence(timeout: 10))
+        XCTAssertLessThan(handle.frame.midX, window.midX)
+        app.buttons["Cancel"].tap()
+
+        // After one clockwise turn, the original top-left corner is shown at the top right.
+        let rotate = app.buttons["rotateButton"]
+        XCTAssertTrue(rotate.waitForExistence(timeout: 10))
+        rotate.tap()
+        waitUntilEnabled(app.buttons["cropButton"])
+        app.buttons["cropButton"].tap()
+        XCTAssertTrue(handle.waitForExistence(timeout: 10))
+        XCTAssertGreaterThan(handle.frame.midX, window.midX)
+        XCTAssertLessThan(handle.frame.midY, window.midY)
+        app.buttons["cropDoneButton"].tap()
+        XCTAssertTrue(rotate.waitForExistence(timeout: 10))
     }
 }

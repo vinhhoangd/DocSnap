@@ -107,3 +107,15 @@ struct Quad: Codable, Equatable {
         return abs(sum) / 2
     }
 }
+
+extension CGPoint {
+    /// Where a normalized (0...1, top-left origin) point lands after the image is rotated
+    /// clockwise by `quarterTurns` × 90°. Use `4 - quarterTurns` to map back.
+    func rotatedNormalized(quarterTurns: Int) -> CGPoint {
+        var p = self
+        for _ in 0..<(((quarterTurns % 4) + 4) % 4) {
+            p = CGPoint(x: 1 - p.y, y: p.x)
+        }
+        return p
+    }
+}

@@ -77,6 +77,7 @@ struct DocumentDetailView: View {
                 } description: {
                     Text("Add pages with the camera or from Photos.")
                 }
+                .accessibilityIdentifier("noPagesView")
                 .padding(.top, 80)
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 20) {
@@ -143,12 +144,16 @@ struct DocumentDetailView: View {
                     renameText = document.title
                     showRename = true
                 }
+                .accessibilityIdentifier("renameMenuItem")
                 Button("Reorder Pages", systemImage: "arrow.up.arrow.down") { showReorder = true }
+                    .accessibilityIdentifier("reorderMenuItem")
                     .disabled(document.pages.count < 2)
                 Button("Extract All Text", systemImage: "text.viewfinder") { extractAllText() }
+                    .accessibilityIdentifier("extractTextMenuItem")
                     .disabled(document.pages.isEmpty)
                 Divider()
                 Button("Delete Document", systemImage: "trash", role: .destructive) { showDeleteDocument = true }
+                    .accessibilityIdentifier("deleteDocumentMenuItem")
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
@@ -218,6 +223,7 @@ struct ReorderPagesView: View {
                                 .frame(width: 44, height: 58)
                             Text("Page \(index + 1)")
                         }
+                        .accessibilityIdentifier("reorderRow")
                     }
                     .onMove { source, destination in
                         try? store.movePages(in: documentID, fromOffsets: source, toOffset: destination)

@@ -15,6 +15,8 @@ struct PageViewer: View {
     @State private var showDeletePage = false
     @State private var pendingEdits = 0
     @State private var recognizing = false
+    /// While a page is zoomed in, horizontal drags pan the page instead of switching pages.
+    @State private var isZoomed = false
     @State private var errorMessage: String?
 
     private var working: Bool { pendingEdits > 0 || recognizing }
@@ -33,14 +35,19 @@ struct PageViewer: View {
         VStack(spacing: 0) {
             TabView(selection: $currentPageID) {
                 ForEach(pages) { page in
-                    ZoomableView {
+                    ZoomableView(isZoomed: $isZoomed) {
+                        // A fixed, full-size frame: when a rotation turns the page from portrait to
+                        // landscape in place, the paging view doesn't re-measure its content, so a
+                        // size that depends on the image's aspect ratio would be drawn stale and overflow.
                         PageImageView(documentID: documentID, page: page, maxPixelSize: 2400)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .padding(.horizontal, 12)
                     .tag(Optional(page.id))
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .scrollDisabled(isZoomed)
             .overlay {
                 if working {
                     ProgressView().controlSize(.large)
@@ -77,6 +84,7 @@ struct PageViewer: View {
         }
         .confirmationDialog("Delete this page?", isPresented: $showDeletePage, titleVisibility: .visible) {
             Button("Delete Page", role: .destructive) { deleteCurrentPage() }
+                .accessibilityIdentifier("confirmDeletePageButton")
         }
         .alert("Something Went Wrong", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("OK", role: .cancel) {}
@@ -90,6 +98,8 @@ struct PageViewer: View {
             barButton("Crop", "crop", id: "cropButton") {
                 cropping = currentPage
             }
+            // The crop screen shows the page as rotated, so wait for queued edits to land first.
+            .disabled(pendingEdits > 0)
             barButton("Rotate", "rotate.right", id: "rotateButton") {
                 guard let page = currentPage else { return }
                 // Relative to the page's state when the edit runs, so quick double taps rotate twice.
@@ -236,6 +246,7 @@ private struct FilterStrip: View {
 
 /// Pinch to zoom, drag to pan while zoomed, double-tap to toggle 2×.
 struct ZoomableView<Content: View>: View {
+    @Binding var isZoomed: Bool
     @ViewBuilder let content: Content
 
     @State private var scale: CGFloat = 1
@@ -277,6 +288,12 @@ struct ZoomableView<Content: View>: View {
                     }
                 }
             }
+            .onChange(of: scale > 1) { _, zoomed in isZoomed = zoomed }
+            .onDisappear {
+                reset()
+                isZoomed = false
+            }
+            .accessibilityIdentifier("zoomablePage")
     }
 
     private func reset() {

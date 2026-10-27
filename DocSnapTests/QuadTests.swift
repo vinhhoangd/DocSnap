@@ -55,6 +55,24 @@ final class QuadTests: XCTestCase {
         XCTAssertFalse(Quad.full.inset(by: 0.1).isNearlyFullFrame)
     }
 
+    func testRotatedNormalizedMatchesImageRotation() {
+        let tl = CGPoint(x: 0.1, y: 0.2)
+        XCTAssertEqual(tl.rotatedNormalized(quarterTurns: 0), tl)
+        // One clockwise turn moves the top-left area to the top-right.
+        let once = tl.rotatedNormalized(quarterTurns: 1)
+        XCTAssertEqual(once.x, 0.8, accuracy: 1e-9)
+        XCTAssertEqual(once.y, 0.1, accuracy: 1e-9)
+        let twice = tl.rotatedNormalized(quarterTurns: 2)
+        XCTAssertEqual(twice.x, 0.9, accuracy: 1e-9)
+        XCTAssertEqual(twice.y, 0.8, accuracy: 1e-9)
+        for turns in 0..<4 {
+            let back = tl.rotatedNormalized(quarterTurns: turns).rotatedNormalized(quarterTurns: 4 - turns)
+            XCTAssertEqual(back.x, tl.x, accuracy: 1e-9)
+            XCTAssertEqual(back.y, tl.y, accuracy: 1e-9)
+        }
+        XCTAssertEqual(tl.rotatedNormalized(quarterTurns: -1).x, tl.rotatedNormalized(quarterTurns: 3).x, accuracy: 1e-9)
+    }
+
     func testCodableRoundTrip() throws {
         let page = ScanPage(quad: Quad.ordered([CGPoint(x: 0.1, y: 0.2), CGPoint(x: 0.9, y: 0.1), CGPoint(x: 0.95, y: 0.9), CGPoint(x: 0.05, y: 0.8)]),
                             filter: .blackWhite, rotation: 3, textLines: [TextLine(text: "Xin chào", box: CGRect(x: 0.1, y: 0.1, width: 0.5, height: 0.05))])

@@ -1,6 +1,11 @@
+import CoreImage
 import SwiftUI
 
 /// Drag the four corners (or the edges) to fit the paper. A loupe magnifies the corner being dragged.
+///
+/// The crop is stored in the *original* photo's coordinates (it's applied before rotation), but the
+/// photo is shown turned the way the page is, so a rotated page doesn't appear sideways here.
+/// Points are mapped between the two spaces with `rotatedNormalized(quarterTurns:)`.
 struct CropView: View {
     @Environment(DocumentStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -9,7 +14,11 @@ struct CropView: View {
     let page: ScanPage
     let onDone: (Quad) -> Void
 
+    /// The unrotated original, used for auto-detection.
+    @State private var original: CGImage?
+    /// The original turned by the page's rotation: what the user sees and drags on.
     @State private var image: UIImage?
+    /// Crop corners in original-image space.
     @State private var quad: Quad = .full
     @State private var dragStart: Quad?
     @State private var activeHandle: Handle?
@@ -49,9 +58,10 @@ struct CropView: View {
                 }
             }
             .ignoresSafeArea(edges: .horizontal)
+            .safeAreaInset(edge: .bottom) { bottomBar }
             .navigationTitle("Crop")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar, .bottomBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -64,20 +74,6 @@ struct CropView: View {
                     .disabled(!quad.isValid)
                     .accessibilityIdentifier("cropDoneButton")
                 }
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Button {
-                        autoDetect()
-                    } label: {
-                        Label("Auto Detect", systemImage: "viewfinder")
-                    }
-                    .disabled(detecting || image == nil)
-                    Spacer()
-                    Button {
-                        withAnimation(.snappy) { quad = .full }
-                    } label: {
-                        Label("Full Page", systemImage: "arrow.up.left.and.arrow.down.right")
-                    }
-                }
             }
             .alert("No Document Found", isPresented: $notFound) {
                 Button("OK", role: .cancel) {}
@@ -88,16 +84,54 @@ struct CropView: View {
         .task {
             quad = page.quad
             let url = store.originalURL(documentID, page.id)
-            image = await Task.detached(priority: .userInitiated) {
-                DocumentStore.loadImage(at: url, maxPixelSize: 2048)
+            let turns = page.rotation
+            let loaded = await Task.detached(priority: .userInitiated) { () -> (CGImage, UIImage)? in
+                guard let cg = ImageProcessor.loadCGImage(at: url, maxPixelSize: 2048) else { return nil }
+                let turned = ImageProcessor.render(ImageProcessor.rotated(CIImage(cgImage: cg), quarterTurns: turns)) ?? cg
+                return (cg, UIImage(cgImage: turned))
             }.value
+            original = loaded?.0
+            image = loaded?.1
         }
     }
+
+    // A plain bar instead of a `.bottomBar` toolbar, which UIKit warns about inside a full-screen cover.
+    private var bottomBar: some View {
+        HStack {
+            Button {
+                autoDetect()
+            } label: {
+                Label("Auto Detect", systemImage: "viewfinder")
+            }
+            .disabled(detecting || original == nil)
+            .accessibilityIdentifier("cropAutoButton")
+            Spacer()
+            Button {
+                withAnimation(.snappy) { quad = .full }
+            } label: {
+                Label("Full Page", systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+            .accessibilityIdentifier("cropFullButton")
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(.bar)
+    }
+
+    // MARK: - Coordinate spaces
+
+    /// Original-image point → on-screen (rotated) point.
+    private func toDisplay(_ p: CGPoint) -> CGPoint { p.rotatedNormalized(quarterTurns: page.rotation) }
+
+    /// On-screen (rotated) point → original-image point.
+    private func toOriginal(_ p: CGPoint) -> CGPoint { p.rotatedNormalized(quarterTurns: 4 - page.rotation) }
+
+    private var displayPoints: [CGPoint] { quad.points.map(toDisplay) }
 
     // MARK: - Drawing
 
     private func overlay(in rect: CGRect) -> some View {
-        let pts = quad.points.map { point(in: rect, $0) }
+        let pts = displayPoints.map { point(in: rect, $0) }
         return ZStack {
             // Dim everything outside the crop.
             Path { p in
@@ -116,7 +150,7 @@ struct CropView: View {
     }
 
     private func handles(in rect: CGRect) -> some View {
-        let pts = quad.points.map { point(in: rect, $0) }
+        let pts = displayPoints.map { point(in: rect, $0) }
         return ZStack {
             ForEach(0..<4, id: \.self) { i in
                 let a = pts[i], b = pts[(i + 1) % 4]
@@ -145,12 +179,13 @@ struct CropView: View {
     }
 
     private func loupe(image: UIImage, rect: CGRect, area: CGSize, handle: Handle) -> some View {
+        let pts = displayPoints
         let focus: CGPoint
         switch handle {
         case .corner(let i):
-            focus = quad[i]
+            focus = pts[i]
         case .edge(let i):
-            let a = quad[i], b = quad[(i + 1) % 4]
+            let a = pts[i], b = pts[(i + 1) % 4]
             focus = CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
         }
         let zoomed = CGSize(width: rect.width * loupeZoom, height: rect.height * loupeZoom)
@@ -187,16 +222,21 @@ struct CropView: View {
                 }
                 // One handle at a time: a second finger on another handle is ignored.
                 guard activeHandle == handle, let start = dragStart, rect.width > 0, rect.height > 0 else { return }
+                // The finger moves in screen (rotated) space; store the result in original space.
                 let dx = value.translation.width / rect.width
                 let dy = value.translation.height / rect.height
+                func moved(_ p: CGPoint) -> CGPoint {
+                    let d = toDisplay(p)
+                    return toOriginal(clamp(CGPoint(x: d.x + dx, y: d.y + dy)))
+                }
                 var next = start
                 switch handle {
                 case .corner(let i):
-                    next[i] = clamp(CGPoint(x: start[i].x + dx, y: start[i].y + dy))
+                    next[i] = moved(start[i])
                 case .edge(let i):
                     let j = (i + 1) % 4
-                    next[i] = clamp(CGPoint(x: start[i].x + dx, y: start[i].y + dy))
-                    next[j] = clamp(CGPoint(x: start[j].x + dx, y: start[j].y + dy))
+                    next[i] = moved(start[i])
+                    next[j] = moved(start[j])
                 }
                 quad = next
             }
@@ -208,7 +248,7 @@ struct CropView: View {
     }
 
     private func autoDetect() {
-        guard let cg = image?.cgImage else { return }
+        guard let cg = original else { return }
         detecting = true
         Task {
             let found = await DocumentDetector.detect(in: cg)
