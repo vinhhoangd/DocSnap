@@ -1,0 +1,16 @@
+included:
+  - DocSnap
+  - DocSnapTests
+  - DocSnapUITests
+disabled_rules:
+  - identifier_name
+  - trailing_comma
+line_length:
+  warning: 160
+  error: 220
+type_body_length:
+  warning: 400
+file_length:
+  warning: 600
+function_body_length:
+  warning: 80

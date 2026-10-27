@@ -1,0 +1,5 @@
+// Shared build settings. Personal values (team id) go in Local.xcconfig, which is git-ignored.
+DOCSNAP_BUNDLE_ID = com.vinhhoang.docsnap
+DOCSNAP_TEAM_ID =
+
+#include? "Local.xcconfig"

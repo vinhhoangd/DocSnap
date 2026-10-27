@@ -1,0 +1,33 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+Config/Local.xcconfig
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcresult
+
+# SwiftPM
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Android (later)
+android/.gradle/
+android/local.properties
+android/**/build/
+*.keystore
+*.jks

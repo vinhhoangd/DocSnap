@@ -1,0 +1,6 @@
+// Copy to Config/Local.xcconfig (git-ignored) and fill in.
+// Team ID: Xcode → Settings → Accounts → your Apple ID → "Personal Team" (10 characters).
+DOCSNAP_TEAM_ID = XXXXXXXXXX
+
+// Free Apple IDs need a globally unique bundle id. If Xcode says it's taken, change it here.
+// DOCSNAP_BUNDLE_ID = com.vinhhoang.docsnap
