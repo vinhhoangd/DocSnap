@@ -18,8 +18,10 @@ struct LibraryView: View {
     @State private var busyMessage: String?
     @State private var errorMessage: String?
     @State private var renaming: ScanDocument?
+    @State private var showRename = false
     @State private var renameText = ""
     @State private var deleting: ScanDocument?
+    @State private var showDelete = false
     @State private var shareItem: ShareItem?
     @State private var showSettings = false
 
@@ -46,27 +48,24 @@ struct LibraryView: View {
             if let busyMessage { BusyOverlay(message: busyMessage) }
         }
         .sheet(item: $shareItem) { item in
-            ShareSheet(items: item.urls)
+            ShareSheet(items: item.urls) { shareItem = nil }
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
-        .alert("Rename", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+        .alert("Rename", isPresented: $showRename, presenting: renaming) { doc in
             TextField("Title", text: $renameText)
             Button("Cancel", role: .cancel) {}
-            Button("Save") {
-                if let doc = renaming { try? store.rename(doc.id, to: renameText) }
-            }
+            Button("Save") { try? store.rename(doc.id, to: renameText) }
         }
         .confirmationDialog(
             "Delete \"\(deleting?.title ?? "")\"?",
-            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                if let doc = deleting { store.deleteDocument(doc.id) }
-            }
-        } message: {
+            isPresented: $showDelete,
+            titleVisibility: .visible,
+            presenting: deleting
+        ) { doc in
+            Button("Delete", role: .destructive) { store.deleteDocument(doc.id) }
+        } message: { _ in
             Text("This can't be undone.")
         }
         .alert("Something Went Wrong", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -105,14 +104,14 @@ struct LibraryView: View {
                     }
                     .accessibilityIdentifier("documentRow")
                     .swipeActions(edge: .trailing) {
-                        Button("Delete", systemImage: "trash", role: .destructive) { deleting = doc }
+                        Button("Delete", systemImage: "trash", role: .destructive) { startDelete(doc) }
                         Button("Rename", systemImage: "pencil") { startRename(doc) }
                             .tint(.orange)
                     }
                     .contextMenu {
                         Button("Share PDF", systemImage: "square.and.arrow.up") { sharePDF(doc) }
                         Button("Rename", systemImage: "pencil") { startRename(doc) }
-                        Button("Delete", systemImage: "trash", role: .destructive) { deleting = doc }
+                        Button("Delete", systemImage: "trash", role: .destructive) { startDelete(doc) }
                     }
                 }
             }
@@ -124,6 +123,7 @@ struct LibraryView: View {
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button("Settings", systemImage: "gearshape") { showSettings = true }
+                .accessibilityIdentifier("settingsButton")
         }
         ToolbarItem(placement: .topBarTrailing) {
             Button("Import from Photos", systemImage: "photo.on.rectangle") { captureSource = .photos }
@@ -165,6 +165,12 @@ struct LibraryView: View {
     private func startRename(_ doc: ScanDocument) {
         renameText = doc.title
         renaming = doc
+        showRename = true
+    }
+
+    private func startDelete(_ doc: ScanDocument) {
+        deleting = doc
+        showDelete = true
     }
 
     private func sharePDF(_ doc: ScanDocument) {

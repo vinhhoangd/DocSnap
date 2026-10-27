@@ -33,9 +33,13 @@ struct PageImageView: View {
 /// UIKit share sheet: AirDrop, Files, Mail, Messages, Print, Save Image…
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
+    /// Called when sharing finishes or is cancelled, so the hosting sheet can close.
+    var onComplete: () -> Void = {}
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.completionWithItemsHandler = { _, _, _, _ in onComplete() }
+        return controller
     }
 
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
@@ -49,7 +53,7 @@ struct ShareItem: Identifiable {
 
 /// Apple's document camera: live edge detection, auto-capture, perspective correction, multi-page.
 struct DocumentCameraView: UIViewControllerRepresentable {
-    var onFinish: ([UIImage]) -> Void
+    var onFinish: (VNDocumentCameraScan) -> Void
     var onCancel: () -> Void
     var onError: (Error) -> Void
 
@@ -71,8 +75,8 @@ struct DocumentCameraView: UIViewControllerRepresentable {
         init(_ parent: DocumentCameraView) { self.parent = parent }
 
         func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {
-            let images = (0..<scan.pageCount).map { scan.imageOfPage(at: $0) }
-            parent.onFinish(images)
+            // Hand over the scan itself; pages are written to disk one at a time off the main thread.
+            parent.onFinish(scan)
         }
 
         func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {

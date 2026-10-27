@@ -5,6 +5,8 @@ included:
 disabled_rules:
   - identifier_name
   - trailing_comma
+  - large_tuple   # (r, g, b) pixel tuples in tests
+  - nesting       # NewPage.Source reads better nested
 line_length:
   warning: 160
   error: 220

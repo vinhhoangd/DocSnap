@@ -19,6 +19,9 @@ final class DocumentStore {
     let rootURL: URL
     @ObservationIgnored private let fileManager = FileManager.default
     @ObservationIgnored let imageCache = NSCache<NSString, UIImage>()
+    /// Tail of the edit queue for each page, so edits to one page apply strictly in order.
+    @ObservationIgnored private var editQueues: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var memoryWarningObserver: NSObjectProtocol?
 
     nonisolated static var defaultRootURL: URL {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -28,8 +31,14 @@ final class DocumentStore {
     init(rootURL: URL = DocumentStore.defaultRootURL) {
         self.rootURL = rootURL
         imageCache.countLimit = 200
+        imageCache.totalCostLimit = 120 * 1024 * 1024
         try? fileManager.createDirectory(at: rootURL, withIntermediateDirectories: true)
         load()
+        memoryWarningObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.imageCache.removeAllObjects() }
+        }
     }
 
     // MARK: - Paths
@@ -71,8 +80,31 @@ final class DocumentStore {
 
     /// A captured or imported image plus the crop to apply (`nil` = auto-detect, `.full` = keep everything).
     struct NewPage {
-        var image: UIImage
+        enum Source {
+            case image(UIImage)
+            /// An encoded image file. Preferred for camera/photo batches: pages are decoded one at a
+            /// time, so a 50-page scan never holds 50 decoded 12 MP bitmaps in memory.
+            /// The file is deleted after it has been saved.
+            case file(URL)
+        }
+
+        var source: Source
         var quad: Quad?
+
+        init(image: UIImage, quad: Quad?) {
+            source = .image(image)
+            self.quad = quad
+        }
+
+        init(fileURL: URL, quad: Quad?) {
+            source = .file(fileURL)
+            self.quad = quad
+        }
+    }
+
+    /// Scratch folder for captured pages waiting to be saved.
+    nonisolated static var captureDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("Capture", isDirectory: true)
     }
 
     /// Creates a document from scanned images. Heavy work happens off the main thread.
@@ -106,53 +138,108 @@ final class DocumentStore {
 
     private func savePages(_ newPages: [NewPage], documentID: UUID, filter: ScanFilter) async throws -> [ScanPage] {
         var result: [ScanPage] = []
-        for newPage in newPages {
-            let pageID = UUID()
-            let originalURL = originalURL(documentID, pageID)
-            let processedURL = processedURL(documentID, pageID)
-            let image = newPage.image
-            let requestedQuad = newPage.quad
-            let page = try await Task.detached(priority: .userInitiated) { () throws -> ScanPage in
-                try autoreleasepool {
-                    guard let cg = ImageProcessor.normalizedCGImage(image),
-                          let originalData = ImageProcessor.jpegData(cg, quality: 0.9) else {
-                        throw StoreError.imageProcessingFailed
+        defer {
+            for newPage in newPages {
+                if case .file(let url) = newPage.source { try? fileManager.removeItem(at: url) }
+            }
+        }
+        do {
+            for newPage in newPages {
+                let pageID = UUID()
+                let originalURL = originalURL(documentID, pageID)
+                let processedURL = processedURL(documentID, pageID)
+                let source = newPage.source
+                let requestedQuad = newPage.quad
+                let page = try await Task.detached(priority: .userInitiated) { () throws -> ScanPage in
+                    try autoreleasepool {
+                        let decoded: CGImage?
+                        switch source {
+                        case .image(let image):
+                            decoded = ImageProcessor.normalizedCGImage(image)
+                        case .file(let url):
+                            // Applies EXIF orientation and caps the size while decoding.
+                            decoded = ImageProcessor.loadCGImage(at: url, maxPixelSize: ImageProcessor.maxStoredDimension)
+                        }
+                        guard let cg = decoded, let originalData = ImageProcessor.jpegData(cg, quality: 0.9) else {
+                            throw StoreError.imageProcessingFailed
+                        }
+                        let quad = requestedQuad ?? DocumentDetector.detectSync(in: cg) ?? .full
+                        let page = ScanPage(id: pageID, quad: quad, filter: filter)
+                        try originalData.write(to: originalURL, options: .atomic)
+                        try Self.renderProcessed(original: cg, page: page, to: processedURL)
+                        return page
                     }
-                    let quad = requestedQuad ?? DocumentDetector.detectSync(in: cg) ?? .full
-                    let page = ScanPage(id: pageID, quad: quad, filter: filter)
-                    try originalData.write(to: originalURL, options: .atomic)
-                    try Self.renderProcessed(original: cg, page: page, to: processedURL)
-                    return page
-                }
-            }.value
-            result.append(page)
+                }.value
+                result.append(page)
+            }
+        } catch {
+            // Don't leave unreferenced page files behind.
+            for page in result { removeFiles(documentID, page.id) }
+            throw error
         }
         return result
     }
 
     // MARK: - Editing
 
-    /// Saves an edited page (crop, rotation or filter) and re-renders its image.
+    /// Saves an edited page's crop, rotation and filter and re-renders its image.
     func updatePage(_ page: ScanPage, in documentID: UUID) async throws {
-        guard let current = document(documentID)?.pages.first(where: { $0.id == page.id }) else { return }
-        var updated = page
-        updated.rotation = ((page.rotation % 4) + 4) % 4
-        let imageChanged = updated.quad != current.quad || updated.rotation != current.rotation || updated.filter != current.filter
-        if imageChanged {
-            updated.version = max(current.version, page.version) + 1
-            updated.textLines = nil
-            let originalURL = originalURL(documentID, page.id)
-            let processedURL = processedURL(documentID, page.id)
-            let snapshot = updated
+        try await editPage(page.id, in: documentID) {
+            $0.quad = page.quad
+            $0.rotation = page.rotation
+            $0.filter = page.filter
+        }
+    }
+
+    /// Applies `change` to the page as it is *when the edit runs*. Edits to the same page are
+    /// queued, so tapping Rotate twice rotates twice and a quick filter change can't undo a rotation.
+    func editPage(_ pageID: UUID, in documentID: UUID, _ change: @escaping (inout ScanPage) -> Void) async throws {
+        let previous = editQueues[pageID]
+        let edit = Task { @MainActor () throws in
+            _ = await previous?.value
+            try await self.applyEdit(pageID, in: documentID, change)
+        }
+        let tail = Task { @MainActor in _ = try? await edit.value }
+        editQueues[pageID] = tail
+        defer {
+            if editQueues[pageID] == tail { editQueues[pageID] = nil }
+        }
+        try await edit.value
+    }
+
+    private func applyEdit(_ pageID: UUID, in documentID: UUID, _ change: (inout ScanPage) -> Void) async throws {
+        guard let current = document(documentID)?.pages.first(where: { $0.id == pageID }) else { return }
+        var updated = current
+        change(&updated)
+        updated.id = current.id
+        updated.rotation = ((updated.rotation % 4) + 4) % 4
+        guard updated.quad != current.quad || updated.rotation != current.rotation || updated.filter != current.filter else { return }
+        updated.version = current.version + 1
+        updated.textLines = nil
+        let originalURL = originalURL(documentID, pageID)
+        let processedURL = processedURL(documentID, pageID)
+        let snapshot = updated
+        do {
             try await Task.detached(priority: .userInitiated) {
                 try autoreleasepool {
                     guard let original = ImageProcessor.loadCGImage(at: originalURL) else { throw StoreError.missingFile }
                     try Self.renderProcessed(original: original, page: snapshot, to: processedURL)
                 }
             }.value
+        } catch {
+            // The page was deleted while rendering: that's not an error worth showing.
+            if document(documentID)?.pages.contains(where: { $0.id == pageID }) != true {
+                removeFiles(documentID, pageID)
+                return
+            }
+            throw error
         }
-        // Re-read after the await so concurrent edits to other pages aren't lost.
-        guard var doc = document(documentID), let index = doc.pages.firstIndex(where: { $0.id == page.id }) else { return }
+        // Re-read after the await: other pages may have changed, or this page may be gone —
+        // in which case the render may have re-created a file that deletePage already removed.
+        guard var doc = document(documentID), let index = doc.pages.firstIndex(where: { $0.id == pageID }) else {
+            removeFiles(documentID, pageID)
+            return
+        }
         doc.pages[index] = updated
         try commit(doc)
     }
@@ -208,7 +295,9 @@ final class DocumentStore {
         let image = await Task.detached(priority: .userInitiated) {
             Self.loadImage(at: url, maxPixelSize: maxPixelSize)
         }.value
-        if let image { imageCache.setObject(image, forKey: key) }
+        if let image, let cg = image.cgImage {
+            imageCache.setObject(image, forKey: key, cost: cg.bytesPerRow * cg.height)
+        }
         return image
     }
 

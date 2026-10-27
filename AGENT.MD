@@ -118,10 +118,23 @@ Later (v0.2+):
 
 **Last updated:** 2026-10-27
 
-Done this session:
-- Project created; core v0.1 features implemented (see §8); tests on simulator.
+Done (session 1):
+- Project created; v0.1 features in §8 implemented and pushed.
+- Multi-agent pass: a bug hunter found 11 bugs (edit races, memory on big scans, cache size, mirrored crop, page-delete position, …) and all were fixed. A tester added regression tests and found one more bug (delete during edit), which is fixed too.
+- `scripts/test.sh`: 51 unit + 10 UI tests, all green on the iPhone 13 Pro simulator (iOS 26.5). SwiftLint is clean.
+- Verified: border detection on sample photos, filters, PDF embeds the JPEGs as-is (3-page PDF ≈ the JPEGs' total size), searchable OCR text, Vietnamese titles.
+
+Not verified yet (needs the real phone):
+- The VisionKit live camera (the simulator has no camera feed), AirDrop, real-paper detection quality, speed with 12 MP photos.
+
+Known small issues / ideas:
+- The crop screen shows the page unrotated when the page has been rotated.
+- Panning a zoomed page can also swipe to the next page.
+- The crop screen's bottom toolbar logs a UIKit warning inside a full-screen cover.
+- More accessibility identifiers would make UI tests sturdier: menu items, the rename field, "Delete Page", the search field.
 
 Next up:
-1. Owner installs on iPhone 13 Pro (steps in §6) and reports how scanning, borders and AirDrop feel.
+1. Owner installs on iPhone 13 Pro (steps in §6) and reports how scanning, borders and AirDrop feel. As of 2026-10-27 the Mac has no signing identity yet — the owner must add their Apple ID in Xcode.
 2. Tune filters / detection from real-device feedback.
-3. Start v0.2 items in §8 in order, starting with the custom camera.
+3. Fix the known small issues above.
+4. Start v0.2 items in §8 in order, starting with the custom camera.

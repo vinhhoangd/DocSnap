@@ -39,7 +39,7 @@ struct DocumentDetailView: View {
             if let busyMessage { BusyOverlay(message: busyMessage) }
         }
         .sheet(item: $shareItem) { item in
-            ShareSheet(items: item.urls)
+            ShareSheet(items: item.urls) { shareItem = nil }
         }
         .sheet(isPresented: $showReorder) {
             ReorderPagesView(documentID: documentID)

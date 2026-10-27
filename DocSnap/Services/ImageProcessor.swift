@@ -85,7 +85,11 @@ enum ImageProcessor {
     // MARK: - Rendering / IO
 
     static func render(_ image: CIImage) -> CGImage? {
-        let extent = image.extent.integral
+        // Round inward: rounding a fractional perspective extent outward adds a transparent
+        // row/column that becomes a black line in the JPEG.
+        let e = image.extent
+        let minX = e.minX.rounded(.up), minY = e.minY.rounded(.up)
+        let extent = CGRect(x: minX, y: minY, width: e.maxX.rounded(.down) - minX, height: e.maxY.rounded(.down) - minY)
         guard extent.width >= 1, extent.height >= 1, extent.width.isFinite, extent.height.isFinite else { return nil }
         return context.createCGImage(image, from: extent)
     }
@@ -107,6 +111,7 @@ enum ImageProcessor {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         format.opaque = true
+        format.preferredRange = .standard // 8-bit; the P3 default can allocate 16-bit buffers
         return UIGraphicsImageRenderer(size: target, format: format).image { _ in
             image.draw(in: CGRect(origin: .zero, size: target))
         }.cgImage

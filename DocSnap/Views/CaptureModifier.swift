@@ -1,5 +1,7 @@
+import AVFoundation
 import PhotosUI
 import SwiftUI
+import VisionKit
 
 enum CaptureSource: Identifiable {
     case camera
@@ -17,22 +19,22 @@ struct CaptureModifier: ViewModifier {
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var showCameraUnavailable = false
     @State private var cameraError: String?
-    @State private var loadingPhotos = false
+    @State private var showCameraDenied = false
+    @State private var importMessage: String?
+    @State private var loading = false
 
     func body(content: Content) -> some View {
         content
             .fullScreenCover(isPresented: cameraPresented) {
                 DocumentCameraView(
-                    onFinish: { images in
+                    onFinish: { scan in
                         source = nil
-                        // VisionKit already found the borders and flattened the page.
-                        let pages = images.map { DocumentStore.NewPage(image: $0, quad: .full) }
-                        if !pages.isEmpty { onCapture(pages) }
+                        savePages(of: scan)
                     },
                     onCancel: { source = nil },
-                    onError: { error in
+                    onError: { _ in
                         source = nil
-                        cameraError = error.localizedDescription
+                        cameraError = "The camera couldn't start. Close other apps that use the camera and try again."
                     }
                 )
                 .ignoresSafeArea()
@@ -46,9 +48,13 @@ struct CaptureModifier: ViewModifier {
                 preferredItemEncoding: .compatible
             )
             .onChange(of: source) { _, newValue in
-                if newValue == .camera, !DocumentCameraView.isSupported {
+                guard newValue == .camera else { return }
+                if !DocumentCameraView.isSupported {
                     source = nil
                     showCameraUnavailable = true
+                } else if [.denied, .restricted].contains(AVCaptureDevice.authorizationStatus(for: .video)) {
+                    source = nil
+                    showCameraDenied = true
                 }
             }
             .onChange(of: photoItems) { _, items in
@@ -57,7 +63,20 @@ struct CaptureModifier: ViewModifier {
                 loadPhotos(items)
             }
             .overlay {
-                if loadingPhotos { BusyOverlay(message: "Importing…") }
+                if loading { BusyOverlay(message: "Importing…") }
+            }
+            .alert("Camera Access Needed", isPresented: $showCameraDenied) {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Allow DocSnap to use the camera in Settings to scan documents.")
+            }
+            .alert("Import", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importMessage ?? "")
             }
             .alert("Camera Unavailable", isPresented: $showCameraUnavailable) {
                 Button("Import from Photos") { source = .photos }
@@ -74,7 +93,10 @@ struct CaptureModifier: ViewModifier {
 
     private var cameraPresented: Binding<Bool> {
         Binding(
-            get: { source == .camera && DocumentCameraView.isSupported },
+            get: {
+                source == .camera && DocumentCameraView.isSupported
+                    && ![.denied, .restricted].contains(AVCaptureDevice.authorizationStatus(for: .video))
+            },
             set: { if !$0, source == .camera { source = nil } }
         )
     }
@@ -86,16 +108,58 @@ struct CaptureModifier: ViewModifier {
         )
     }
 
-    private func loadPhotos(_ items: [PhotosPickerItem]) {
-        loadingPhotos = true
+    /// Writes each VisionKit page to a temp JPEG off the main thread, one page in memory at a time.
+    private func savePages(of scan: VNDocumentCameraScan) {
+        loading = true
         Task {
+            let urls = await Task.detached(priority: .userInitiated) { () -> [URL] in
+                let folder = DocumentStore.captureDirectory
+                try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                var urls: [URL] = []
+                for index in 0..<scan.pageCount {
+                    autoreleasepool {
+                        let url = folder.appendingPathComponent("\(UUID().uuidString).jpg")
+                        if let data = scan.imageOfPage(at: index).jpegData(compressionQuality: 0.92),
+                           (try? data.write(to: url)) != nil {
+                            urls.append(url)
+                        }
+                    }
+                }
+                return urls
+            }.value
+            loading = false
+            // VisionKit already found the borders and flattened each page.
+            let pages = urls.map { DocumentStore.NewPage(fileURL: $0, quad: .full) }
+            if pages.count < scan.pageCount {
+                importMessage = "\(scan.pageCount - pages.count) page(s) couldn't be saved."
+            }
+            if !pages.isEmpty { onCapture(pages) }
+        }
+    }
+
+    /// Copies the picked photos' encoded data to temp files without decoding them.
+    private func loadPhotos(_ items: [PhotosPickerItem]) {
+        loading = true
+        Task {
+            let folder = DocumentStore.captureDirectory
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             var pages: [DocumentStore.NewPage] = []
+            var failed = 0
             for item in items {
-                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-                    pages.append(DocumentStore.NewPage(image: image, quad: nil))
+                let url = folder.appendingPathComponent(UUID().uuidString)
+                if let data = try? await item.loadTransferable(type: Data.self), UIImage(data: data) != nil,
+                   (try? data.write(to: url)) != nil {
+                    pages.append(DocumentStore.NewPage(fileURL: url, quad: nil))
+                } else {
+                    failed += 1
                 }
             }
-            loadingPhotos = false
+            loading = false
+            if failed > 0 {
+                importMessage = failed == items.count
+                    ? "The selected photos couldn't be imported. If they're stored in iCloud, check your connection and try again."
+                    : "\(failed) of \(items.count) photos couldn't be imported."
+            }
             if !pages.isEmpty { onCapture(pages) }
         }
     }

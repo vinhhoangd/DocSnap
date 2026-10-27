@@ -84,19 +84,14 @@ struct Quad: Codable, Equatable {
         zip(points, Quad.full.points).allSatisfy { abs($0.x - $1.x) < 0.001 && abs($0.y - $1.y) < 0.001 }
     }
 
-    /// A usable crop: convex, wound consistently, and not collapsed to a sliver.
+    /// A usable crop: convex, wound clockwise on screen (so not mirrored), and not a sliver.
     var isValid: Bool {
         let pts = points
-        var sign: CGFloat = 0
         for i in 0..<4 {
             let a = pts[i], b = pts[(i + 1) % 4], c = pts[(i + 2) % 4]
+            // With y pointing down, a clockwise turn has a positive cross product.
             let cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)
-            if abs(cross) < 1e-6 { return false }
-            if sign == 0 {
-                sign = cross > 0 ? 1 : -1
-            } else if (cross > 0 ? 1 : -1) != sign {
-                return false
-            }
+            if cross <= 1e-6 { return false }
         }
         return area > 0.01
     }

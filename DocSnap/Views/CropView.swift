@@ -185,7 +185,8 @@ struct CropView: View {
                     dragStart = quad
                     activeHandle = handle
                 }
-                guard let start = dragStart, rect.width > 0, rect.height > 0 else { return }
+                // One handle at a time: a second finger on another handle is ignored.
+                guard activeHandle == handle, let start = dragStart, rect.width > 0, rect.height > 0 else { return }
                 let dx = value.translation.width / rect.width
                 let dy = value.translation.height / rect.height
                 var next = start
@@ -200,6 +201,7 @@ struct CropView: View {
                 quad = next
             }
             .onEnded { _ in
+                guard activeHandle == handle else { return }
                 dragStart = nil
                 activeHandle = nil
             }

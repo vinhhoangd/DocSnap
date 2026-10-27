@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0F666013A5B650B5C3A49C71 /* Quad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 712DDF5BFBEB42A4CCEF8749 /* Quad.swift */; };
+		134B4810467986B94539EAED /* EditQueueAndImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3467FFD1A1A65F79B24703A1 /* EditQueueAndImportTests.swift */; };
 		17488C46BE381C4036A335B6 /* TextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FDFD6255F428320C0DA213 /* TextRecognizer.swift */; };
 		1C4B817F1F8EFD97D869F4EF /* PageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D7B79F65502CDBC4936869 /* PageViewer.swift */; };
 		1D5A5FEFB3F3D74973BD2FA4 /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EC8F6A357F48A61F3A8AFDB /* PDFExporter.swift */; };
@@ -17,6 +18,7 @@
 		3DF7DF9DA2CE71B808E13851 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88DC27368A5934A5A5AD7C77 /* SettingsView.swift */; };
 		42E941761B6502DDCB4BC7BE /* ScanFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32EB0C7BE971B52C1BCA6E6F /* ScanFilter.swift */; };
 		56CD24EE83B6AAAAFF1432A7 /* QuadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB810951E1313E9F8028F978 /* QuadTests.swift */; };
+		670C83A611801D1846AF0B56 /* DeviceEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 359E40EAB53B26284251D105 /* DeviceEdgeCaseTests.swift */; };
 		78BD254EAF8CF66AE0B2C50A /* CaptureModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1978B1962A39A38DB62F7273 /* CaptureModifier.swift */; };
 		7C8BBA92B3C6F93AC33C9A3C /* CropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB63B12577C34CA032C47A2 /* CropView.swift */; };
 		82E32FEBE0AC3924EFBD7B87 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E7886E2B8F8852268A6A4870 /* Assets.xcassets */; };
@@ -53,7 +55,9 @@
 		1495E5B9D54ECD3A956B9811 /* DocumentDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentDetector.swift; sourceTree = "<group>"; };
 		1978B1962A39A38DB62F7273 /* CaptureModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureModifier.swift; sourceTree = "<group>"; };
 		32EB0C7BE971B52C1BCA6E6F /* ScanFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFilter.swift; sourceTree = "<group>"; };
+		3467FFD1A1A65F79B24703A1 /* EditQueueAndImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditQueueAndImportTests.swift; sourceTree = "<group>"; };
 		34D7B79F65502CDBC4936869 /* PageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewer.swift; sourceTree = "<group>"; };
+		359E40EAB53B26284251D105 /* DeviceEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceEdgeCaseTests.swift; sourceTree = "<group>"; };
 		3734BACA0A617F4D53616B0E /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		45495B3B30EDF4DF65ABE879 /* DocumentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentDetailView.swift; sourceTree = "<group>"; };
 		4BAEAB85A911F7750949BB3B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -111,6 +115,8 @@
 		34F620A66BAFB6558B7A3319 /* DocSnapTests */ = {
 			isa = PBXGroup;
 			children = (
+				359E40EAB53B26284251D105 /* DeviceEdgeCaseTests.swift */,
+				3467FFD1A1A65F79B24703A1 /* EditQueueAndImportTests.swift */,
 				B8F5E9E87EBACF574B7C3DCB /* ImageProcessorTests.swift */,
 				EB810951E1313E9F8028F978 /* QuadTests.swift */,
 				FBDDD8064F740C8E2404F313 /* StoreAndExportTests.swift */,
@@ -342,6 +348,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				670C83A611801D1846AF0B56 /* DeviceEdgeCaseTests.swift in Sources */,
+				134B4810467986B94539EAED /* EditQueueAndImportTests.swift in Sources */,
 				F4C2D85479B28F229868201C /* ImageProcessorTests.swift in Sources */,
 				56CD24EE83B6AAAAFF1432A7 /* QuadTests.swift in Sources */,
 				E8A6BD05E18F7A47509942B6 /* StoreAndExportTests.swift in Sources */,

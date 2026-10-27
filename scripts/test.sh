@@ -22,11 +22,16 @@ if [[ "${1:-}" == "unit" ]]; then ONLY=(-only-testing:DocSnapTests); fi
 
 RESULT="$ROOT/build/TestResults.xcresult"
 rm -rf "$RESULT"
+# Capture xcodebuild's own exit status. (The old `... | grep ... || true; exit ${pipestatus[1]}`
+# always exited 0: with pipefail the failing pipeline ran `true`, which reset pipestatus.)
+set +e
 xcodebuild test \
   -project DocSnap.xcodeproj -scheme DocSnap \
   -destination "id=$DEST_ID" \
   -derivedDataPath "$ROOT/build/DerivedData" \
   -resultBundlePath "$RESULT" \
   CODE_SIGNING_ALLOWED=NO \
-  "${ONLY[@]}" 2>&1 | grep -E "error:|warning: .*DocSnap/|Test Case .*(passed|failed)|Executed|TEST (SUCCEEDED|FAILED)|\*\* " || true
-exit ${pipestatus[1]}
+  "${ONLY[@]}" 2>&1 | grep -E "error:|warning: .*DocSnap/|Test Case .*(passed|failed)|Executed|TEST (SUCCEEDED|FAILED)|\*\* "
+STATUS=${pipestatus[1]}
+set -e
+exit $STATUS

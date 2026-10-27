@@ -13,8 +13,11 @@ struct PageViewer: View {
     @State private var cropping: ScanPage?
     @State private var textContent: TextSheetContent?
     @State private var showDeletePage = false
-    @State private var working = false
+    @State private var pendingEdits = 0
+    @State private var recognizing = false
     @State private var errorMessage: String?
+
+    private var working: Bool { pendingEdits > 0 || recognizing }
 
     private var pages: [ScanPage] { store.document(documentID)?.pages ?? [] }
 
@@ -48,9 +51,7 @@ struct PageViewer: View {
 
             if showFilters, let page = currentPage {
                 FilterStrip(documentID: documentID, page: page) { filter in
-                    var edited = page
-                    edited.filter = filter
-                    apply(edited)
+                    apply(to: page.id) { $0.filter = filter }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -64,17 +65,11 @@ struct PageViewer: View {
             if currentPageID == nil { currentPageID = initialPageID }
         }
         .onChange(of: pages.map(\.id)) { _, ids in
-            if ids.isEmpty {
-                dismiss()
-            } else if let current = currentPageID, !ids.contains(current) {
-                currentPageID = ids[min(currentIndex, ids.count - 1)]
-            }
+            if ids.isEmpty { dismiss() }
         }
         .fullScreenCover(item: $cropping) { page in
             CropView(documentID: documentID, page: page) { quad in
-                var edited = page
-                edited.quad = quad
-                apply(edited)
+                apply(to: page.id) { $0.quad = quad }
             }
         }
         .sheet(item: $textContent) { content in
@@ -97,9 +92,8 @@ struct PageViewer: View {
             }
             barButton("Rotate", "rotate.right", id: "rotateButton") {
                 guard let page = currentPage else { return }
-                var edited = page
-                edited.rotation = (page.rotation + 1) % 4
-                apply(edited)
+                // Relative to the page's state when the edit runs, so quick double taps rotate twice.
+                apply(to: page.id) { $0.rotation += 1 }
             }
             barButton("Filters", "camera.filters", id: "filtersButton", selected: showFilters) {
                 withAnimation(.snappy) { showFilters.toggle() }
@@ -114,7 +108,7 @@ struct PageViewer: View {
         .padding(.horizontal, 8)
         .padding(.top, 8)
         .background(.bar)
-        .disabled(working || currentPage == nil)
+        .disabled(currentPage == nil)
     }
 
     private func barButton(_ title: String, _ icon: String, id: String, selected: Bool = false,
@@ -132,12 +126,13 @@ struct PageViewer: View {
 
     // MARK: - Actions
 
-    private func apply(_ page: ScanPage) {
-        working = true
+    /// Queues an edit in the store; edits to one page apply in order, each on the latest state.
+    private func apply(to pageID: UUID, _ change: @escaping (inout ScanPage) -> Void) {
+        pendingEdits += 1
         Task {
-            defer { working = false }
+            defer { pendingEdits -= 1 }
             do {
-                try await store.updatePage(page, in: documentID)
+                try await store.editPage(pageID, in: documentID, change)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -145,24 +140,33 @@ struct PageViewer: View {
     }
 
     private func recognizeText() {
-        guard let page = currentPage else { return }
+        guard let page = currentPage, !recognizing else { return }
+        // Capture now: the user may swipe to another page while OCR runs.
+        let title = "Page \(currentIndex + 1)"
         if let text = page.recognizedText {
-            textContent = TextSheetContent(title: "Page \(currentIndex + 1)", text: text)
+            textContent = TextSheetContent(title: title, text: text)
             return
         }
-        working = true
+        recognizing = true
         Task {
-            let lines = await store.recognizeText(for: page, in: documentID)
-            working = false
+            // Let queued edits to this page finish first, so the text matches the final image.
+            while pendingEdits > 0 { try? await Task.sleep(for: .milliseconds(100)) }
+            let fresh = store.document(documentID)?.pages.first { $0.id == page.id } ?? page
+            let lines = await store.recognizeText(for: fresh, in: documentID)
+            recognizing = false
             let text = lines.map { $0.map(\.text).joined(separator: "\n") } ?? ""
-            textContent = TextSheetContent(title: "Page \(currentIndex + 1)", text: text)
+            textContent = TextSheetContent(title: title, text: text)
         }
     }
 
     private func deleteCurrentPage() {
         guard let page = currentPage else { return }
+        let index = currentIndex
         do {
             try store.deletePage(page.id, from: documentID)
+            // Stay at the same position (the next page), not jump back to page 1.
+            let remaining = pages
+            if !remaining.isEmpty { currentPageID = remaining[min(index, remaining.count - 1)].id }
         } catch {
             errorMessage = error.localizedDescription
         }
