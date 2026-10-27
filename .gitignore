@@ -31,3 +31,6 @@ android/local.properties
 android/**/build/
 *.keystore
 *.jks
+
+# iCloud Drive conflict copies
+* 2.*
