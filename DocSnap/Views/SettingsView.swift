@@ -189,18 +189,18 @@ private struct SettingLabel: View {
     }
 }
 
-/// The app mark drawn in SwiftUI (matches the app icon's corner brackets and page).
+/// The app icon ("Frost Mono"), shown with the same rounded-square mask as the Home Screen.
 private struct AppMark: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 13, style: .continuous)
-            .fill(LinearGradient(colors: [Color(red: 0.27, green: 0.45, blue: 1.0), Color(red: 0.33, green: 0.20, blue: 0.80)],
-                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+        Image("AppLogo")
+            .resizable()
+            .interpolation(.high)
             .frame(width: 58, height: 58)
-            .overlay {
-                Image(systemName: "doc.viewfinder")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundStyle(.white)
-            }
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+            )
             .accessibilityHidden(true)
     }
 }

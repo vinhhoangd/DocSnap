@@ -203,6 +203,10 @@ Known small issues / ideas:
 
 Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if server/ changed), then `scripts/deploy_phone.sh`. The phone script works over Wi‑Fi when the phone is unlocked on the same network.
 
+- 2026-10-28: The owner chose app icon **D6 · Frost Mono**: a frosted-glass page on graphite, with a blue accent.
+  - Concepts are on the Design canvas https://claude.ai/artifact/SoysBLdh52y1fa12Uo5XTo and in `design/icon-concepts/`.
+  - The source is `design/app-icon-d6.svg` (full-bleed). Run `scripts/render_icon.sh` (needs `brew install librsvg`) to regenerate AppIcon (1024, opaque) and the in-app AppLogo.
+
 Next up:
 1. Owner tries the hold-steady camera and the Answer button on the iPhone and reports back.
 2. Tune filters / detection from real-device feedback.
