@@ -25,9 +25,9 @@ set +e
 xcodebuild build -project DocSnap.xcodeproj -scheme DocSnap -configuration Debug \
   -destination "id=$DEVICE" -derivedDataPath "$DERIVED" -allowProvisioningUpdates -quiet 2>&1 \
   | grep -E "error:|BUILD (SUCCEEDED|FAILED)" 
-status=${pipestatus[1]}
+rc=${pipestatus[1]}
 set -e
-(( status == 0 )) || { echo "Build failed." >&2; exit $status; }
+(( rc == 0 )) || { echo "Build failed." >&2; exit $rc; }
 
 echo "Installing on the iPhone…"
 xcrun devicectl device install app --device "$DEVICE" "$APP" | grep -E "App installed|bundleID" || true
