@@ -1,0 +1,20 @@
+{
+  "name": "docsnap-server",
+  "private": true,
+  "type": "module",
+  "description": "DocSnap Answer API: forwards a scanned page to Claude and streams the answer back. Holds the Anthropic API key so the iPhone app never does.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "try": "node --env-file=../.env scripts/try-answer.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}
