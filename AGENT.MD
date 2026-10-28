@@ -50,7 +50,7 @@ It holds the requirements, the expectations, and where the last session stopped.
 
 - **Skills:**
   - The owner installed the Apple HIG skills (`.claude/skills/hig-*`) and `ui-ux-pro-max` (`.agents/skills/`). Use them for UI work.
-  - They are git-ignored: third-party, unlicensed, Apple-copyrighted text.
+  - They are committed to the repo at the owner's request (2026-10-27), so any machine gets them. They're third-party: no license files, and the HIG text is © Apple. `skills-lock.json` records their sources.
   - HIG project context lives in `.claude/apple-design-context.md`, which is committed.
 - **Style:**
   - Minimal / Swiss: the paper is the hero. White page thumbnails get a hairline edge and a short soft shadow (`paperStyle()`).

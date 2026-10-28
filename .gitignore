@@ -36,6 +36,3 @@ android/**/build/
 * [0-9].*
 * [0-9]
 
-# Third-party AI skills installed by the owner (no license files; HIG text is (c) Apple) -- keep local, not in the public repo
-.agents/
-.claude/skills/
