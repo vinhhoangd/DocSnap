@@ -90,15 +90,19 @@ final class DocumentStore {
 
         var source: Source
         var quad: Quad?
+        /// Used when `quad` is nil and auto-detection on the full photo finds nothing
+        /// (e.g. the corners the live camera saw when it captured).
+        var quadHint: Quad?
 
         init(image: UIImage, quad: Quad?) {
             source = .image(image)
             self.quad = quad
         }
 
-        init(fileURL: URL, quad: Quad?) {
+        init(fileURL: URL, quad: Quad?, quadHint: Quad? = nil) {
             source = .file(fileURL)
             self.quad = quad
+            self.quadHint = quadHint
         }
     }
 
@@ -150,6 +154,7 @@ final class DocumentStore {
                 let processedURL = processedURL(documentID, pageID)
                 let source = newPage.source
                 let requestedQuad = newPage.quad
+                let quadHint = newPage.quadHint.flatMap { $0.isValid ? $0 : nil }
                 let page = try await Task.detached(priority: .userInitiated) { () throws -> ScanPage in
                     try autoreleasepool {
                         let decoded: CGImage?
@@ -163,7 +168,7 @@ final class DocumentStore {
                         guard let cg = decoded, let originalData = ImageProcessor.jpegData(cg, quality: 0.9) else {
                             throw StoreError.imageProcessingFailed
                         }
-                        let quad = requestedQuad ?? DocumentDetector.detectSync(in: cg) ?? .full
+                        let quad = requestedQuad ?? DocumentDetector.detectSync(in: cg) ?? quadHint ?? .full
                         let page = ScanPage(id: pageID, quad: quad, filter: filter)
                         try originalData.write(to: originalURL, options: .atomic)
                         try Self.renderProcessed(original: cg, page: page, to: processedURL)
@@ -216,6 +221,7 @@ final class DocumentStore {
         guard updated.quad != current.quad || updated.rotation != current.rotation || updated.filter != current.filter else { return }
         updated.version = current.version + 1
         updated.textLines = nil
+        updated.answer = nil
         let originalURL = originalURL(documentID, pageID)
         let processedURL = processedURL(documentID, pageID)
         let snapshot = updated
@@ -249,6 +255,14 @@ final class DocumentStore {
         guard var doc = document(documentID), let index = doc.pages.firstIndex(where: { $0.id == pageID }),
               doc.pages[index].version == version else { return }
         doc.pages[index].textLines = lines
+        try? commit(doc, touch: false)
+    }
+
+    /// Stores Claude's answer, unless the page changed since the answer was requested.
+    func setAnswer(_ answer: PageAnswer, pageID: UUID, in documentID: UUID) {
+        guard var doc = document(documentID), let index = doc.pages.firstIndex(where: { $0.id == pageID }),
+              doc.pages[index].version == answer.pageVersion else { return }
+        doc.pages[index].answer = answer
         try? commit(doc, touch: false)
     }
 
@@ -349,9 +363,11 @@ final class DocumentStore {
         return lines
     }
 
-    /// Clears old exports; they're only needed while the share sheet is open.
+    /// Clears old exports (only needed while the share sheet is open) and captured photos
+    /// left behind by an interrupted scan. Call at launch, when nothing is in progress.
     func cleanExports() {
         try? fileManager.removeItem(at: fileManager.temporaryDirectory.appendingPathComponent("Exports"))
+        try? fileManager.removeItem(at: Self.captureDirectory)
     }
 
     // MARK: - Internals

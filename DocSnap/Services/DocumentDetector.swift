@@ -1,8 +1,8 @@
 import CoreGraphics
 import Vision
 
-/// Finds the paper's corners in a still photo (used for imports and the "Auto" crop button).
-/// The live camera uses VisionKit, which does its own detection.
+/// Finds the paper's corners in a photo or a live camera frame
+/// (used for imports, the "Auto Detect" crop button and DocSnap's camera).
 enum DocumentDetector {
     /// Returns the document's corners (top-left origin), or `nil` if nothing convincing was found.
     static func detect(in image: CGImage) async -> Quad? {
@@ -11,44 +11,40 @@ enum DocumentDetector {
         }.value
     }
 
+    static func detectSync(in image: CGImage) -> Quad? {
+        detect(using: VNImageRequestHandler(cgImage: image, options: [:]))
+    }
+
+    /// For live camera frames. `orientation` describes how the buffer is rotated relative to upright.
+    static func detectSync(in pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .up) -> Quad? {
+        detect(using: VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation, options: [:]))
+    }
+
     /// Runs both detectors and keeps the largest plausible page. The ML segmenter can return
     /// the whole frame or a partial strip, while the edge-based finder can lock onto a box
     /// printed *inside* the page, so neither result is trusted on its own.
-    static func detectSync(in image: CGImage) -> Quad? {
-        let candidates = ([segmentDocument(in: image)] + detectRectangles(in: image)).compactMap { $0 }
-        guard let best = candidates.filter({ !$0.isNearlyFullFrame }).max(by: { $0.area < $1.area }) else { return nil }
+    private static func detect(using handler: VNImageRequestHandler) -> Quad? {
+        let segmentation = VNDetectDocumentSegmentationRequest()
+        let rectangles = VNDetectRectanglesRequest()
+        rectangles.minimumAspectRatio = 0.25
+        rectangles.maximumAspectRatio = 1.0
+        rectangles.minimumSize = 0.2
+        rectangles.quadratureTolerance = 30
+        rectangles.minimumConfidence = 0.5
+        rectangles.maximumObservations = 3
+
+        // Perform separately: if one request fails (e.g. no Neural Engine), the other still runs.
+        var candidates: [Quad] = []
+        if (try? handler.perform([segmentation])) != nil,
+           let obs = segmentation.results?.first, obs.confidence >= 0.5, let quad = quad(from: obs) {
+            candidates.append(quad)
+        }
+        if (try? handler.perform([rectangles])) != nil {
+            candidates += (rectangles.results ?? []).compactMap(quad(from:))
+        }
+        guard let best = candidates.filter({ !$0.isNearlyFullFrame && !$0.isMostlyOnFrameEdge })
+            .max(by: { $0.area < $1.area }) else { return nil }
         return best.inset(by: 0.004)
-    }
-
-    /// Apple's document segmentation model (iOS 15+): best at real paper on a desk.
-    private static func segmentDocument(in image: CGImage) -> Quad? {
-        let request = VNDetectDocumentSegmentationRequest()
-        let handler = VNImageRequestHandler(cgImage: image, options: [:])
-        do {
-            try handler.perform([request])
-        } catch {
-            return nil
-        }
-        guard let obs = request.results?.first, obs.confidence >= 0.5 else { return nil }
-        return quad(from: obs)
-    }
-
-    /// Classic edge-based rectangle finder: precise on high-contrast page edges.
-    private static func detectRectangles(in image: CGImage) -> [Quad] {
-        let request = VNDetectRectanglesRequest()
-        request.minimumAspectRatio = 0.25
-        request.maximumAspectRatio = 1.0
-        request.minimumSize = 0.2
-        request.quadratureTolerance = 30
-        request.minimumConfidence = 0.5
-        request.maximumObservations = 3
-        let handler = VNImageRequestHandler(cgImage: image, options: [:])
-        do {
-            try handler.perform([request])
-        } catch {
-            return []
-        }
-        return (request.results ?? []).compactMap(quad(from:))
     }
 
     private static func quad(from obs: VNRectangleObservation) -> Quad? {
@@ -61,6 +57,15 @@ enum DocumentDetector {
 }
 
 extension Quad {
+    /// Three or more corners on the image border. The segmentation model reports such strips
+    /// (e.g. the bottom quarter of a blank wall) with high confidence; a real page in view has
+    /// corners inside the frame, and one cut off by the frame can't be cropped correctly anyway.
+    var isMostlyOnFrameEdge: Bool {
+        let margin: CGFloat = 0.02
+        let onEdge = points.filter { $0.x < margin || $0.x > 1 - margin || $0.y < margin || $0.y > 1 - margin }
+        return onEdge.count >= 3
+    }
+
     /// Every corner within 2% of the image corner: the detector saw no real page edge.
     var isNearlyFullFrame: Bool {
         zip(points, Quad.full.points).allSatisfy { abs($0.x - $1.x) < 0.02 && abs($0.y - $1.y) < 0.02 }

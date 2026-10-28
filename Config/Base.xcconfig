@@ -1,5 +1,8 @@
 // Shared build settings. Personal values (team id) go in Local.xcconfig, which is git-ignored.
 DOCSNAP_BUNDLE_ID = com.vinhhoang.docsnap
 DOCSNAP_TEAM_ID =
+// Answer server (set in Local.xcconfig). xcconfig treats "//" as a comment, so URLs are written https:/$()/host
+DOCSNAP_API_URL =
+DOCSNAP_APP_TOKEN =
 
 #include? "Local.xcconfig"

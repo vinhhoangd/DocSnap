@@ -7,6 +7,15 @@ struct TextLine: Codable, Equatable {
     var box: CGRect
 }
 
+/// Claude's answer to the questions on a page, kept until the page image changes.
+struct PageAnswer: Codable, Equatable {
+    var text: String
+    var model: String
+    var createdAt: Date
+    /// The page version the answer was made from.
+    var pageVersion: Int
+}
+
 struct ScanPage: Codable, Identifiable, Equatable {
     var id: UUID
     /// Crop corners within the stored original image.
@@ -18,15 +27,18 @@ struct ScanPage: Codable, Identifiable, Equatable {
     var textLines: [TextLine]?
     /// Bumped on every edit so cached images are invalidated.
     var version: Int
+    /// Claude's answer for the current image; cleared whenever the image changes.
+    var answer: PageAnswer?
 
     init(id: UUID = UUID(), quad: Quad = .full, filter: ScanFilter = .magicColor, rotation: Int = 0,
-         textLines: [TextLine]? = nil, version: Int = 0) {
+         textLines: [TextLine]? = nil, version: Int = 0, answer: PageAnswer? = nil) {
         self.id = id
         self.quad = quad
         self.filter = filter
         self.rotation = rotation
         self.textLines = textLines
         self.version = version
+        self.answer = answer
     }
 
     var recognizedText: String? {
@@ -34,7 +46,7 @@ struct ScanPage: Codable, Identifiable, Equatable {
     }
 
     // Tolerant decoding so documents saved by older/newer builds still open.
-    private enum CodingKeys: String, CodingKey { case id, quad, filter, rotation, textLines, version }
+    private enum CodingKeys: String, CodingKey { case id, quad, filter, rotation, textLines, version, answer }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -44,6 +56,7 @@ struct ScanPage: Codable, Identifiable, Equatable {
         rotation = ((try c.decodeIfPresent(Int.self, forKey: .rotation) ?? 0) % 4 + 4) % 4
         textLines = try c.decodeIfPresent([TextLine].self, forKey: .textLines)
         version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 0
+        answer = try? c.decodeIfPresent(PageAnswer.self, forKey: .answer)
     }
 }
 

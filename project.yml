@@ -36,6 +36,9 @@ targets:
         NSCameraUsageDescription: DocSnap uses the camera to scan your paper documents.
         NSPhotoLibraryAddUsageDescription: DocSnap saves scanned pages to your photo library when you choose Save Image.
         ITSAppUsesNonExemptEncryption: false
+        # Answer server address and app token come from Config/Local.xcconfig (git-ignored).
+        DocSnapAPIURL: $(DOCSNAP_API_URL)
+        DocSnapAppToken: $(DOCSNAP_APP_TOKEN)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(DOCSNAP_BUNDLE_ID)

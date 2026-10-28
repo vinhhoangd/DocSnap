@@ -196,8 +196,14 @@ final class DocSnapUITests: XCTestCase {
         XCTAssertTrue(documentRow.waitForExistence(timeout: 20))
         app.buttons["settingsButton"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
-        XCTAssertTrue(element(labelContaining: "Page Size").waitForExistence(timeout: 5))
-        XCTAssertTrue(element(labelContaining: "Default Filter").exists)
+        XCTAssertTrue(element(labelContaining: "Default Filter").waitForExistence(timeout: 5))
+        // The Display, Camera and AI Answers sections push the PDF rows below the fold; the Form is lazy,
+        // so off-screen rows aren't in the accessibility tree until scrolled to.
+        let pageSize = element(labelContaining: "Page Size")
+        for _ in 0..<6 where !pageSize.waitForExistence(timeout: 1) {
+            app.collectionViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(pageSize.waitForExistence(timeout: 5))
         XCTAssertTrue(app.switches.firstMatch.exists, "Searchable PDF toggle missing")
         app.navigationBars["Settings"].buttons["Done"].tap()
         waitForDisappearance(app.navigationBars["Settings"])
@@ -217,6 +223,58 @@ final class DocSnapUITests: XCTestCase {
 
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 10))
         XCTAssertTrue(documentRow.waitForExistence(timeout: 5), "Clearing the query should bring the document back")
+    }
+
+    // MARK: - Answer and appearance
+
+    func testAnswerWithoutServerShowsNotSetUp() {
+        // Config/Local.xcconfig gives the test build a token but no server URL.
+        openFirstPage()
+        let answer = app.buttons["answerButton"]
+        waitUntilEnabled(answer)
+        answer.tap()
+
+        let error = app.descendants(matching: .any)["answerError"].firstMatch
+        XCTAssertTrue(error.waitForExistence(timeout: 15), "The Answer sheet should fail fast without a server")
+        XCTAssertTrue(element(labelContaining: "Couldn't Get an Answer").exists)
+        XCTAssertTrue(element(labelContaining: "aren't set up").exists, "The message should say answers aren't set up")
+        XCTAssertFalse(app.descendants(matching: .any)["answerText"].exists)
+
+        // Try Again fails the same way instead of hanging on "Reading the page…".
+        let retry = app.buttons["Try Again"].firstMatch
+        XCTAssertTrue(retry.exists)
+        retry.tap()
+        XCTAssertTrue(error.waitForExistence(timeout: 15))
+
+        app.navigationBars["Answer"].buttons["Done"].tap()
+        waitForDisappearance(app.navigationBars["Answer"])
+        XCTAssertTrue(app.buttons["answerButton"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["1 / 2"].exists)
+    }
+
+    func testAppearancePickerSwitchesWithoutCrashing() {
+        XCTAssertTrue(documentRow.waitForExistence(timeout: 20))
+        app.buttons["settingsButton"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        let picker = app.descendants(matching: .any)["appearancePicker"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), "Appearance picker missing")
+
+        // End on System so later tests (and the next launch) start in the default appearance.
+        for option in ["Dark", "Light", "System"] {
+            picker.tap()
+            let choice = app.buttons[option].firstMatch
+            XCTAssertTrue(choice.waitForExistence(timeout: 5), "\(option) option missing:\n\(app.debugDescription)")
+            choice.tap()
+            waitForDisappearance(choice, timeout: 5)
+            XCTAssertEqual(app.state, .runningForeground, "App crashed switching to \(option)")
+            XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+            let label = [picker.label, picker.value as? String ?? ""].joined(separator: " ")
+            XCTAssertTrue(label.contains(option), "Picker should show \(option), shows \"\(label)\"")
+        }
+
+        app.navigationBars["Settings"].buttons["Done"].tap()
+        waitForDisappearance(app.navigationBars["Settings"])
+        XCTAssertTrue(documentRow.waitForExistence(timeout: 5))
     }
 
     // MARK: - Zoom and rotated crop

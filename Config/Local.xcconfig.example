@@ -4,3 +4,10 @@ DOCSNAP_TEAM_ID = XXXXXXXXXX
 
 // Free Apple IDs need a globally unique bundle id. If Xcode says it's taken, change it here.
 // DOCSNAP_BUNDLE_ID = com.vinhhoang.docsnap
+
+// Answer server (Vercel). Note the $() trick: "//" would start a comment in an xcconfig file.
+// DOCSNAP_API_URL = https:/$()/your-project.vercel.app
+// DOCSNAP_APP_TOKEN = (same value as DOCSNAP_APP_TOKEN in .env and on Vercel)
+
+// Your iPhone's UDID for scripts/deploy_phone.sh (xcrun devicectl list devices)
+// DOCSNAP_DEVICE_ID = 00000000-0000000000000000

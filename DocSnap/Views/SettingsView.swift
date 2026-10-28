@@ -5,6 +5,13 @@ struct SettingsView: View {
     @AppStorage(Settings.defaultFilterKey) private var defaultFilter: ScanFilter = .magicColor
     @AppStorage(Settings.pdfPageSizeKey) private var pageSize: PDFPageSize = .auto
     @AppStorage(Settings.searchablePDFKey) private var searchablePDF = true
+    @AppStorage(Settings.appearanceKey) private var appearance: AppearanceMode = .system
+    @AppStorage(Settings.scannerKey) private var scanner: ScannerKind = .docsnap
+    @AppStorage(Settings.autoCaptureDelayKey) private var autoCapture: AutoCaptureDelay = .oneAndHalf
+    @AppStorage(Settings.answerModelKey) private var answerModel: AnswerModel = .opus
+
+    enum ServerStatus { case unknown, checking, ok, failed, notConfigured }
+    @State var serverStatus: ServerStatus = .unknown
 
     private var version: String {
         let info = Bundle.main.infoDictionary
@@ -31,6 +38,32 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker(selection: $appearance) {
+                        ForEach(AppearanceMode.allCases) { Text($0.title).tag($0) }
+                    } label: {
+                        SettingLabel("Appearance", systemImage: "circle.lefthalf.filled", color: .black)
+                    }
+                    .accessibilityIdentifier("appearancePicker")
+                } header: {
+                    Text("Display")
+                } footer: {
+                    Text("System follows your iPhone's Light or Dark setting.")
+                }
+
+                Section {
+                    Picker(selection: $scanner) {
+                        ForEach(ScannerKind.allCases) { Text($0.title).tag($0) }
+                    } label: {
+                        SettingLabel("Camera", systemImage: "camera.viewfinder", color: .orange)
+                    }
+                    if scanner == .docsnap {
+                        Picker(selection: $autoCapture) {
+                            ForEach(AutoCaptureDelay.allCases) { Text($0.title).tag($0) }
+                        } label: {
+                            SettingLabel("Auto-Capture", systemImage: "timer", color: .green)
+                        }
+                        .accessibilityIdentifier("autoCapturePicker")
+                    }
                     Picker(selection: $defaultFilter) {
                         ForEach(ScanFilter.allCases) { Text($0.displayName).tag($0) }
                     } label: {
@@ -39,7 +72,30 @@ struct SettingsView: View {
                 } header: {
                     Text("Scanning")
                 } footer: {
-                    Text("Applied to new scans and imports. You can change it per page.")
+                    Text(scanner == .docsnap
+                         ? "DocSnap Camera waits until the page is held steady before it captures, so you have time to line it up. "
+                            + "The filter applies to new scans and imports."
+                         : "Apple Scanner captures as soon as it finds the page. The filter applies to new scans and imports.")
+                }
+
+                Section {
+                    Picker(selection: $answerModel) {
+                        ForEach(AnswerModel.allCases) { model in
+                            Text("\(model.displayName) · \(model.detail)").tag(model)
+                        }
+                    } label: {
+                        SettingLabel("AI Model", systemImage: "sparkles", color: .purple)
+                    }
+                    .accessibilityIdentifier("answerModelPicker")
+                    LabeledContent {
+                        serverStatusView
+                    } label: {
+                        SettingLabel("Answer Server", systemImage: "server.rack", color: .teal)
+                    }
+                } header: {
+                    Text("AI Answers")
+                } footer: {
+                    Text("The Answer button sends the page image to Claude through your DocSnap server. Nothing is sent until you tap Answer.")
                 }
 
                 Section {
@@ -69,6 +125,7 @@ struct SettingsView: View {
                         .font(.footnote)
                 }
             }
+            .task { await checkServer() }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -77,6 +134,32 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+}
+
+extension SettingsView {
+    @ViewBuilder
+    var serverStatusView: some View {
+        switch serverStatus {
+        case .unknown, .checking:
+            ProgressView().controlSize(.small)
+        case .ok:
+            Label("Connected", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+        case .failed:
+            Button("Unreachable · Retry") { Task { await checkServer() } }
+                .foregroundStyle(.orange)
+        case .notConfigured:
+            Text("Not set up").foregroundStyle(.secondary)
+        }
+    }
+
+    func checkServer() async {
+        guard let config = AnswerConfig.fromBundle() else {
+            serverStatus = .notConfigured
+            return
+        }
+        serverStatus = .checking
+        serverStatus = await AnswerService(config: config).checkHealth() ? .ok : .failed
     }
 }
 

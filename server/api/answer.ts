@@ -59,7 +59,8 @@ export function parseAnswerRequest(body: unknown): AnswerRequest | string {
   if (image.length > MAX_IMAGE_BASE64) return "Page image is too large.";
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(image)) return "Page image must be plain base64.";
   if (text !== undefined && typeof text !== "string") return "text must be a string.";
-  if (model !== undefined && (typeof model !== "string" || !(model in ALLOWED_MODELS))) return "Unsupported model.";
+  // Object.hasOwn: `in` would also accept inherited names like "toString" or "__proto__".
+  if (model !== undefined && (typeof model !== "string" || !Object.hasOwn(ALLOWED_MODELS, model))) return "Unsupported model.";
   return {
     image,
     text: typeof text === "string" ? text.slice(0, MAX_OCR_CHARS) : undefined,
@@ -129,6 +130,10 @@ export async function* streamAnswer(
 }
 
 function toErrorEvent(error: unknown): AnswerEvent {
+  // APIUserAbortError extends APIError, so check cancellation first.
+  if (error instanceof Anthropic.APIUserAbortError || (error instanceof Error && error.name === "AbortError")) {
+    return { type: "error", code: "cancelled", message: "Cancelled." };
+  }
   if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
     return { type: "error", code: "server_key", message: "The server's Claude API key is missing or invalid." };
   }
@@ -136,7 +141,7 @@ function toErrorEvent(error: unknown): AnswerEvent {
     return { type: "error", code: "rate_limited", message: "Claude is busy right now. Try again in a minute." };
   }
   if (error instanceof Anthropic.BadRequestError) {
-    return { type: "error", code: "bad_request", message: `Claude rejected the request: ${error.message}` };
+    return { type: "error", code: "bad_request", message: `Claude couldn't read this request: ${apiErrorText(error)}` };
   }
   if (error instanceof Anthropic.APIConnectionError) {
     return { type: "error", code: "connection", message: "The server couldn't reach Claude. Try again." };
@@ -144,10 +149,19 @@ function toErrorEvent(error: unknown): AnswerEvent {
   if (error instanceof Anthropic.APIError) {
     return { type: "error", code: "api_error", message: `Claude API error ${error.status ?? ""}`.trim() };
   }
-  if (error instanceof Error && error.name === "AbortError") {
-    return { type: "error", code: "cancelled", message: "Cancelled." };
-  }
   return { type: "error", code: "server_error", message: "Something went wrong on the server." };
+}
+
+/** The human-readable part of an API error body ({"type":"error","error":{"message":"…"}}), not the raw JSON. */
+function apiErrorText(error: InstanceType<typeof Anthropic.APIError>): string {
+  const body = error.error as { error?: { message?: unknown }; message?: unknown } | undefined;
+  const message = body?.error?.message ?? body?.message;
+  return typeof message === "string" && message.length > 0 ? message : "the request was invalid.";
+}
+
+/** JSON.stringify leaves U+2028/U+2029/U+0085 raw; line readers (e.g. Swift's AsyncLineSequence) split on them. */
+export function toNDJSONLine(value: unknown): string {
+  return JSON.stringify(value).replace(/[\u2028\u2029\u0085]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`) + "\n";
 }
 
 function tokenMatches(given: string | null, expected: string | undefined): boolean {
@@ -192,7 +206,7 @@ export async function handleAnswer(request: Request, env: Env = process.env): Pr
         controller.close();
         return;
       }
-      controller.enqueue(encoder.encode(JSON.stringify(value) + "\n"));
+      controller.enqueue(encoder.encode(toNDJSONLine(value)));
     },
     async cancel() {
       await events.return(undefined);

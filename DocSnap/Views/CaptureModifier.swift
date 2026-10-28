@@ -15,6 +15,7 @@ enum CaptureSource: Identifiable {
 struct CaptureModifier: ViewModifier {
     @Binding var source: CaptureSource?
     let onCapture: ([DocumentStore.NewPage]) -> Void
+    @AppStorage(Settings.scannerKey) private var scanner: ScannerKind = .docsnap
 
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var showCameraUnavailable = false
@@ -25,20 +26,7 @@ struct CaptureModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .fullScreenCover(isPresented: cameraPresented) {
-                DocumentCameraView(
-                    onFinish: { scan in
-                        source = nil
-                        savePages(of: scan)
-                    },
-                    onCancel: { source = nil },
-                    onError: { _ in
-                        source = nil
-                        cameraError = "The camera couldn't start. Close other apps that use the camera and try again."
-                    }
-                )
-                .ignoresSafeArea()
-            }
+            .fullScreenCover(isPresented: cameraPresented) { cameraCover }
             .photosPicker(
                 isPresented: photosPresented,
                 selection: $photoItems,
@@ -49,7 +37,7 @@ struct CaptureModifier: ViewModifier {
             )
             .onChange(of: source) { _, newValue in
                 guard newValue == .camera else { return }
-                if !DocumentCameraView.isSupported {
+                if !cameraSupported {
                     source = nil
                     showCameraUnavailable = true
                 } else if [.denied, .restricted].contains(AVCaptureDevice.authorizationStatus(for: .video)) {
@@ -91,14 +79,48 @@ struct CaptureModifier: ViewModifier {
             }
     }
 
+    @ViewBuilder
+    private var cameraCover: some View {
+        switch scanner {
+        case .docsnap:
+            ScannerView(
+                onFinish: { pages in
+                    source = nil
+                    if !pages.isEmpty { onCapture(pages) }
+                },
+                onCancel: { source = nil }
+            )
+        case .apple:
+            DocumentCameraView(
+                onFinish: { scan in
+                    source = nil
+                    savePages(of: scan)
+                },
+                onCancel: { source = nil },
+                onError: { _ in
+                    source = nil
+                    cameraError = "The camera couldn't start. Close other apps that use the camera and try again."
+                }
+            )
+            .ignoresSafeArea()
+        }
+    }
+
     private var cameraPresented: Binding<Bool> {
         Binding(
             get: {
-                source == .camera && DocumentCameraView.isSupported
+                source == .camera && cameraSupported
                     && ![.denied, .restricted].contains(AVCaptureDevice.authorizationStatus(for: .video))
             },
             set: { if !$0, source == .camera { source = nil } }
         )
+    }
+
+    private var cameraSupported: Bool {
+        switch scanner {
+        case .docsnap: CameraController.isCameraAvailable
+        case .apple: DocumentCameraView.isSupported
+        }
     }
 
     private var photosPresented: Binding<Bool> {

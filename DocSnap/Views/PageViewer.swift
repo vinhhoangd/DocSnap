@@ -13,6 +13,7 @@ struct PageViewer: View {
     @State private var showFilters = false
     @State private var cropping: ScanPage?
     @State private var textContent: TextSheetContent?
+    @State private var answering: AnswerTarget?
     @State private var showDeletePage = false
     @State private var pendingEdits = 0
     @State private var recognizing = false
@@ -98,6 +99,10 @@ struct PageViewer: View {
         .sheet(item: $textContent) { content in
             TextSheet(content: content)
         }
+        .sheet(item: $answering) { target in
+            AnswerSheet(documentID: documentID, pageID: target.pageID, pageTitle: target.title)
+                .presentationDetents([.large])
+        }
         .confirmationDialog("Delete this page?", isPresented: $showDeletePage, titleVisibility: .visible) {
             Button("Delete Page", role: .destructive) {
                 Haptics.impact(.medium)
@@ -131,6 +136,13 @@ struct PageViewer: View {
             barButton("Text", "text.viewfinder", id: "textButton") {
                 recognizeText()
             }
+            barButton("Answer", "sparkles", id: "answerButton") {
+                guard let page = currentPage else { return }
+                Haptics.impact()
+                answering = AnswerTarget(pageID: page.id, title: "Page \(currentIndex + 1)")
+            }
+            // The answer should describe the final image, so wait for queued edits.
+            .disabled(pendingEdits > 0)
             barButton("Delete", "trash", id: "deletePageButton") {
                 showDeletePage = true
             }
@@ -350,6 +362,12 @@ struct ZoomableView<Content: View>: View {
         offset = .zero
         lastOffset = .zero
     }
+}
+
+struct AnswerTarget: Identifiable {
+    let pageID: UUID
+    let title: String
+    var id: UUID { pageID }
 }
 
 struct TextSheetContent: Identifiable {

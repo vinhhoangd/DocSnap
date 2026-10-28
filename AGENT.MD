@@ -127,7 +127,10 @@ Core (v0.1):
 - [x] Library grid/list views, date sections, sorting
 
 Later (v0.2+):
-- [ ] Custom AVFoundation camera (doc / ID card / book modes, flash, grid) with live edge overlay
+- [x] Custom AVFoundation camera with live edge overlay, hold-steady auto-capture, flash
+- [ ] Camera modes (ID card / book), grid overlay
+- [x] AI Answer (Claude) for questions on a page, via the DocSnap server
+- [x] Appearance setting (System/Light/Dark)
 - [ ] ID card mode (front + back on one page)
 - [ ] Signature, watermark, annotation (PencilKit)
 - [ ] Folders, tags, sort options
@@ -170,13 +173,42 @@ Known small issues / ideas:
 - Simulator tip: right after a relaunch, early taps can be dropped or queued, and the simulator panel's screenshots can lag. Use `xcrun simctl io <udid> screenshot` for a reliable frame.
 
 - 2026-10-27:
-  - Installed on the owner's iPhone 13 Pro (iOS 27.0.1, UDID 00008110-001C64243661401E), built with Xcode 27.1 and the free Personal Team.
-  - The Team ID is in the git-ignored `Config/Local.xcconfig`.
-  - Reinstall (needed every 7 days with a free Apple ID):
-    `xcodebuild build -project DocSnap.xcodeproj -scheme DocSnap -destination 'id=00008110-001C64243661401E' -derivedDataPath ~/Library/Developer/Xcode/DerivedData/DocSnap-device -allowProvisioningUpdates`
-    then `xcrun devicectl device install app --device 00008110-001C64243661401E ~/Library/Developer/Xcode/DerivedData/DocSnap-device/Build/Products/Debug-iphoneos/DocSnap.app`
+  - Installed on the owner's iPhone 13 Pro (iOS 27.0.1), built with Xcode 27.1 and the free Personal Team.
+  - Team ID, device UDID, server URL and app token are in the git-ignored `Config/Local.xcconfig`.
+  - Reinstall (needed every 7 days with a free Apple ID, works over USB or the same Wi‑Fi): `scripts/deploy_phone.sh`
+
+- 2026-10-28, session 3 (owner feedback: Apple's scanner captured too fast; wanted AI answers and an Appearance option):
+  - **DocSnap Camera** is the new default; Apple Scanner is still selectable in Settings.
+    - Code: `CameraController` + `ScannerView` + `StabilityTracker`.
+    - Live outline with a hold-steady ring; captures after 1.5 s steady (1 s / 2 s / manual).
+    - Full 12 MP photos; corners are re-detected on the photo, with the live corners as a fallback.
+  - **Answer** button in the page viewer: `AnswerService` + `AnswerSheet`.
+    - Streams Claude's answer from the DocSnap server (`server/api/answer.ts`, Vercel, @anthropic-ai/sdk).
+    - Model `claude-opus-5-5`, adaptive thinking, effort high, `fallbacks: "default"`.
+    - Answers are saved per page version.
+    - Verified on the owner's linear-algebra homework photo: correct, about 11 s, about 4¢.
+  - **Appearance** setting (System/Light/Dark), applied to every UIWindow.
+  - Multi-agent pass:
+    - The bug hunter found 12 issues and the tester found 5; all fixed.
+    - The tester added 125 tests. Suites: 137 unit and 14 UI on iOS, 35 server (`cd server && npm test`). SwiftLint clean.
+  - Detector rejects candidates with ≥3 corners on the frame edge: the segmentation model reports phantom strips on blank frames.
+  - Secrets: `.env` holds ANTHROPIC_API_KEY and DOCSNAP_APP_TOKEN. `Config/Local.xcconfig` holds the Team ID, DOCSNAP_DEVICE_ID, DOCSNAP_APP_TOKEN and DOCSNAP_API_URL. Both are git-ignored; never print them.
+
+Open items (blocked on the owner):
+- **Server not deployed yet.**
+  - The Vercel CLI is logged in, but its only scope is "adi-201" (ADI201), and the owner said not to use it.
+  - The owner is creating a new Vercel team, **"DocScan 2026"**, for project `docsnap-api`.
+- After the team exists:
+  1. `cd server && vercel link --yes --project docsnap-api --scope <docscan-2026 slug>` and `vercel deploy --prod`.
+  2. The owner adds ANTHROPIC_API_KEY and DOCSNAP_APP_TOKEN (values from `.env`) in Vercel → Project → Settings → Environment Variables (Production). Claude must not enter keys itself.
+  3. Redeploy, then set `DOCSNAP_API_URL = https:/$()/<host>` in `Config/Local.xcconfig`.
+  4. Verify `GET /api/answer` returns `configured: true`, then the homework photo through the live URL.
+  5. Run `scripts/deploy_phone.sh`.
+- Optional: connect the Vercel project to GitHub (root `server/`) so pushes redeploy it automatically.
+
+Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if server/ changed), then `scripts/deploy_phone.sh`. The phone script works over Wi‑Fi when the phone is unlocked on the same network.
 
 Next up:
-1. Owner tries DocSnap on the iPhone 13 Pro and reports how scanning, borders and AirDrop feel.
+1. Owner tries the hold-steady camera and the Answer button on the iPhone and reports back.
 2. Tune filters / detection from real-device feedback.
 3. Start v0.2 items in §8 in order, starting with the custom camera.

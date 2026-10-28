@@ -118,5 +118,96 @@ enum Settings {
     static let pdfPageSizeKey = "pdfPageSize"
     static let searchablePDFKey = "searchablePDF"
     static let libraryLayoutKey = "libraryLayout"
+    static let appearanceKey = "appearance"
+    static let answerModelKey = "answerModel"
+    static let scannerKey = "scanner"
+    static let autoCaptureDelayKey = "autoCaptureDelay"
     static let librarySortKey = "librarySort"
+}
+
+/// App-wide light/dark override (the owner asked for it; System follows iOS).
+enum AppearanceMode: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: "System"
+        case .light: "Light"
+        case .dark: "Dark"
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    var interfaceStyle: UIUserInterfaceStyle {
+        switch self {
+        case .system: .unspecified
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    /// Sets the style on every window, so sheets and full-screen covers follow too.
+    @MainActor
+    func apply() {
+        for scene in UIApplication.shared.connectedScenes {
+            guard let windowScene = scene as? UIWindowScene else { continue }
+            for window in windowScene.windows { window.overrideUserInterfaceStyle = interfaceStyle }
+        }
+    }
+}
+
+/// Which camera the Scan button opens.
+enum ScannerKind: String, CaseIterable, Identifiable {
+    /// DocSnap's camera: live border, waits for the page to be held steady before capturing.
+    case docsnap
+    /// Apple's VisionKit document scanner.
+    case apple
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .docsnap: "DocSnap Camera"
+        case .apple: "Apple Scanner"
+        }
+    }
+}
+
+/// Seconds the page must stay steady before auto-capture; 0 means manual (shutter only).
+enum AutoCaptureDelay: String, CaseIterable, Identifiable {
+    case manual
+    case one
+    case oneAndHalf
+    case two
+
+    var id: String { rawValue }
+
+    var seconds: TimeInterval {
+        switch self {
+        case .manual: 0
+        case .one: 1
+        case .oneAndHalf: 1.5
+        case .two: 2
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .manual: "Off (shutter only)"
+        case .one: "1 second"
+        case .oneAndHalf: "1.5 seconds"
+        case .two: "2 seconds"
+        }
+    }
 }
