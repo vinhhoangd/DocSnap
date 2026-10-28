@@ -169,7 +169,14 @@ Known small issues / ideas:
 - SwiftUI doesn't expose identifiers on alert text fields or the `.searchable` field; UI tests use `textFields.firstMatch` / `searchFields.firstMatch` there.
 - Simulator tip: right after a relaunch, early taps can be dropped or queued, and the simulator panel's screenshots can lag. Use `xcrun simctl io <udid> screenshot` for a reliable frame.
 
+- 2026-10-27:
+  - Installed on the owner's iPhone 13 Pro (iOS 27.0.1, UDID 00008110-001C64243661401E), built with Xcode 27.1 and the free Personal Team.
+  - The Team ID is in the git-ignored `Config/Local.xcconfig`.
+  - Reinstall (needed every 7 days with a free Apple ID):
+    `xcodebuild build -project DocSnap.xcodeproj -scheme DocSnap -destination 'id=00008110-001C64243661401E' -derivedDataPath ~/Library/Developer/Xcode/DerivedData/DocSnap-device -allowProvisioningUpdates`
+    then `xcrun devicectl device install app --device 00008110-001C64243661401E ~/Library/Developer/Xcode/DerivedData/DocSnap-device/Build/Products/Debug-iphoneos/DocSnap.app`
+
 Next up:
-1. Owner installs on iPhone 13 Pro (steps in §6) and reports how scanning, borders and AirDrop feel. As of 2026-10-27 the Mac has no signing identity yet — the owner must add their Apple ID in Xcode.
+1. Owner tries DocSnap on the iPhone 13 Pro and reports how scanning, borders and AirDrop feel.
 2. Tune filters / detection from real-device feedback.
 3. Start v0.2 items in §8 in order, starting with the custom camera.
