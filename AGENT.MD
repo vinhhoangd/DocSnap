@@ -95,7 +95,7 @@ xcodegen generate
 swiftlint
 ```
 
-- `~/Documents` is synced to **iCloud Drive**. Keep build output out of the project folder (`scripts/test.sh` uses `~/Library/Developer/Xcode/DerivedData/DocSnap-cli`). Delete any `… 2.xcodeproj` (or other `… 2`) conflict copies iCloud creates after `xcodegen generate`; never commit them.
+- `~/Documents` is synced to **iCloud Drive**. Keep build output out of the project folder (`scripts/test.sh` uses `~/Library/Developer/Xcode/DerivedData/DocSnap-cli`). Delete any `… 2.xcodeproj`, `… 3.xcodeproj` (or other `… N`) conflict copies iCloud creates after `xcodegen generate`; never commit them. Before every commit run `git status --short | grep -E ' [0-9]+(\.|/|"|$)'` and expect no output.
 - The **simulator has no camera**; VisionKit scanning only works on a real iPhone. On the simulator, use "Import from Photos" or the UI-test sample data (`-uiTestingSampleData` launch argument).
 - To install on the iPhone: open `DocSnap.xcodeproj` in Xcode → Settings → Accounts → add the Apple ID → select the DocSnap target → Signing & Capabilities → Team = your Personal Team → plug in the iPhone → Run. On the phone: Settings → General → VPN & Device Management → trust the developer. Developer Mode must be on (Settings → Privacy & Security → Developer Mode).
 
