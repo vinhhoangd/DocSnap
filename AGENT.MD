@@ -194,17 +194,12 @@ Known small issues / ideas:
   - Detector rejects candidates with ≥3 corners on the frame edge: the segmentation model reports phantom strips on blank frames.
   - Secrets: `.env` holds ANTHROPIC_API_KEY and DOCSNAP_APP_TOKEN. `Config/Local.xcconfig` holds the Team ID, DOCSNAP_DEVICE_ID, DOCSNAP_APP_TOKEN and DOCSNAP_API_URL. Both are git-ignored; never print them.
 
-Open items (blocked on the owner):
-- **Server not deployed yet.**
-  - The Vercel CLI is logged in, but its only scope is "adi-201" (ADI201), and the owner said not to use it.
-  - The owner is creating a new Vercel team, **"DocScan 2026"**, for project `docsnap-api`.
-- After the team exists:
-  1. `cd server && vercel link --yes --project docsnap-api --scope <docscan-2026 slug>` and `vercel deploy --prod`.
-  2. The owner adds ANTHROPIC_API_KEY and DOCSNAP_APP_TOKEN (values from `.env`) in Vercel → Project → Settings → Environment Variables (Production). Claude must not enter keys itself.
-  3. Redeploy, then set `DOCSNAP_API_URL = https:/$()/<host>` in `Config/Local.xcconfig`.
-  4. Verify `GET /api/answer` returns `configured: true`, then the homework photo through the live URL.
-  5. Run `scripts/deploy_phone.sh`.
-- Optional: connect the Vercel project to GitHub (root `server/`) so pushes redeploy it automatically.
+- **Answer server is live** at https://docsnap-api.vercel.app (`GET /api/answer` → `configured: true`).
+  - Vercel project `docsnap-api` in the owner's only scope, **adi-201 (ADI201)**. The owner allowed this on 2026-10-28 with one condition: **never touch the class project `adi205-captions` or anything else in that scope.** Always pass `--scope adi-201` and `--project docsnap-api`.
+  - Secrets (Production, type Secret) were added by the owner with `vercel env add`: ANTHROPIC_API_KEY, DOCSNAP_APP_TOKEN.
+  - Verified: the homework photo through the live URL was correct in about 12 s, about 3.5¢ per page. In the simulator: import → Answer → streamed answer.
+  - Not connected to GitHub. Redeploy with `scripts/deploy_server.sh` after server/ changes.
+  - UI tests never call the server: in DEBUG, `-uiTestingSampleData` turns answers off.
 
 Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if server/ changed), then `scripts/deploy_phone.sh`. The phone script works over Wi‑Fi when the phone is unlocked on the same network.
 

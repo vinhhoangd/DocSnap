@@ -34,6 +34,10 @@ struct AnswerConfig: Equatable {
     var token: String
 
     static func fromBundle(_ bundle: Bundle = .main) -> AnswerConfig? {
+        #if DEBUG
+        // UI tests run with sample data and must never call the real (paid) server.
+        if ProcessInfo.processInfo.arguments.contains(SampleData.launchArgument) { return nil }
+        #endif
         guard let urlString = bundle.object(forInfoDictionaryKey: "DocSnapAPIURL") as? String,
               let token = bundle.object(forInfoDictionaryKey: "DocSnapAppToken") as? String,
               !token.isEmpty, !token.hasPrefix("$("),
