@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="halo" cx="0.5" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#4F46E5" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#4F46E5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="0.5" stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#C084FC"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-200%" width="140%" height="500%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="#070B17"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#halo)"/>
+  <g fill="none" stroke="#F1F5F9" stroke-width="34" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M332 232H600L692 324V792H332Z"/>
+    <path d="M600 232V324H692"/>
+  </g>
+  <g fill="#F1F5F9" fill-opacity="0.55">
+    <rect x="392" y="352" width="200" height="24" rx="12"/>
+    <rect x="392" y="412" width="236" height="24" rx="12"/>
+  </g>
+  <rect x="226" y="484" width="572" height="70" rx="35" fill="url(#beam)" opacity="0.7" filter="url(#soft)"/>
+  <rect x="226" y="501" width="572" height="36" rx="18" fill="url(#beam)"/>
+  <g fill="url(#beam)">
+    <rect x="392" y="610" width="236" height="24" rx="12"/>
+    <rect x="392" y="670" width="160" height="24" rx="12"/>
+  </g>
+</svg>

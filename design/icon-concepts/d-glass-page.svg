@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1C1C22"/>
+      <stop offset="1" stop-color="#0B0B0E"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.02"/>
+    </linearGradient>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="70"/>
+    </filter>
+    <clipPath id="tile">
+      <rect width="1024" height="1024" rx="230"/>
+    </clipPath>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <circle cx="390" cy="420" r="230" fill="#2563EB" filter="url(#blur)"/>
+    <circle cx="660" cy="650" r="210" fill="#7C3AED" filter="url(#blur)"/>
+  </g>
+  <rect x="312" y="222" width="400" height="560" rx="44" fill="url(#sheen)" stroke="#FFFFFF" stroke-opacity="0.4" stroke-width="4"/>
+  <g fill="#FFFFFF">
+    <rect x="376" y="320" width="220" height="24" rx="12" fill-opacity="0.9"/>
+    <rect x="376" y="384" width="272" height="24" rx="12" fill-opacity="0.6"/>
+    <rect x="376" y="448" width="190" height="24" rx="12" fill-opacity="0.6"/>
+    <rect x="376" y="512" width="240" height="24" rx="12" fill-opacity="0.6"/>
+  </g>
+  <circle cx="612" cy="676" r="54" fill="#3B82F6"/>
+  <path d="M588 677L606 695L640 659" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

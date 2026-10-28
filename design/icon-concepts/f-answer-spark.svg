@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E1B4B"/>
+      <stop offset="1" stop-color="#0B0920"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C4B5FD"/>
+      <stop offset="1" stop-color="#60A5FA"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <path d="M286 236H548L628 316V788H286Z" fill="#F8FAFC"/>
+  <path d="M548 236V316H628Z" fill="#C7D2FE"/>
+  <g fill="#94A3B8">
+    <rect x="336" y="372" width="176" height="22" rx="11"/>
+    <rect x="336" y="430" width="216" height="22" rx="11"/>
+    <rect x="336" y="488" width="150" height="22" rx="11"/>
+  </g>
+  <path d="M690 452C704 570 756 622 874 636C756 650 704 702 690 820C676 702 624 650 506 636C624 622 676 570 690 452Z" fill="url(#spark)" stroke="#120F30" stroke-width="22" stroke-linejoin="round" paint-order="stroke"/>
+  <path d="M800 274C806 318 826 338 870 344C826 350 806 370 800 414C794 370 774 350 730 344C774 338 794 318 800 274Z" fill="url(#spark)"/>
+</svg>
