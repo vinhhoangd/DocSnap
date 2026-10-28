@@ -4,6 +4,7 @@ import SwiftUI
 struct PageViewer: View {
     @Environment(DocumentStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let documentID: UUID
     let initialPageID: UUID
@@ -40,24 +41,38 @@ struct PageViewer: View {
                         // landscape in place, the paging view doesn't re-measure its content, so a
                         // size that depends on the image's aspect ratio would be drawn stale and overflow.
                         PageImageView(documentID: documentID, page: page, maxPixelSize: 2400)
+                            .paperStyle(radius: 4)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, Theme.Space.md)
+                    .padding(.vertical, Theme.Space.sm)
                     .tag(Optional(page.id))
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .scrollDisabled(isZoomed)
-            .overlay {
+            .overlay(alignment: .top) {
                 if working {
-                    ProgressView().controlSize(.large)
-                        .padding(20)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    // Non-blocking status pill: the page stays visible while an edit renders.
+                    HStack(spacing: Theme.Space.xs) {
+                        ProgressView().controlSize(.small)
+                        Text(recognizing ? "Reading text…" : "Applying…")
+                            .font(.footnote.weight(.semibold))
+                    }
+                    .padding(.horizontal, Theme.Space.sm)
+                    .padding(.vertical, Theme.Space.xs)
+                    .background(.regularMaterial, in: Capsule())
+                    .shadow(color: .black.opacity(0.1), radius: 6, y: 2)
+                    .padding(.top, Theme.Space.xs)
+                    .transition(.opacity)
+                    .accessibilityElement(children: .combine)
                 }
             }
+            .motion(Theme.Motion.quick, value: working, reduceMotion: reduceMotion)
 
             if showFilters, let page = currentPage {
                 FilterStrip(documentID: documentID, page: page) { filter in
+                    Haptics.selection()
                     apply(to: page.id) { $0.filter = filter }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -65,7 +80,7 @@ struct PageViewer: View {
 
             editBar
         }
-        .background(Color(.secondarySystemBackground))
+        .background(Color(.systemGroupedBackground))
         .navigationTitle(pages.isEmpty ? "" : "\(currentIndex + 1) / \(pages.count)")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -76,6 +91,7 @@ struct PageViewer: View {
         }
         .fullScreenCover(item: $cropping) { page in
             CropView(documentID: documentID, page: page) { quad in
+                Haptics.impact()
                 apply(to: page.id) { $0.quad = quad }
             }
         }
@@ -83,7 +99,10 @@ struct PageViewer: View {
             TextSheet(content: content)
         }
         .confirmationDialog("Delete this page?", isPresented: $showDeletePage, titleVisibility: .visible) {
-            Button("Delete Page", role: .destructive) { deleteCurrentPage() }
+            Button("Delete Page", role: .destructive) {
+                Haptics.impact(.medium)
+                deleteCurrentPage()
+            }
                 .accessibilityIdentifier("confirmDeletePageButton")
         }
         .alert("Something Went Wrong", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -103,10 +122,11 @@ struct PageViewer: View {
             barButton("Rotate", "rotate.right", id: "rotateButton") {
                 guard let page = currentPage else { return }
                 // Relative to the page's state when the edit runs, so quick double taps rotate twice.
+                Haptics.impact()
                 apply(to: page.id) { $0.rotation += 1 }
             }
             barButton("Filters", "camera.filters", id: "filtersButton", selected: showFilters) {
-                withAnimation(.snappy) { showFilters.toggle() }
+                withAnimation(reduceMotion ? nil : Theme.Motion.quick) { showFilters.toggle() }
             }
             barButton("Text", "text.viewfinder", id: "textButton") {
                 recognizeText()
@@ -115,23 +135,38 @@ struct PageViewer: View {
                 showDeletePage = true
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 8)
+        .padding(.horizontal, Theme.Space.xs)
+        .padding(.top, Theme.Space.xs)
+        .padding(.bottom, Theme.Space.xxs)
         .background(.bar)
+        .overlay(alignment: .top) { Divider() }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .disabled(currentPage == nil)
     }
 
     private func barButton(_ title: String, _ icon: String, id: String, selected: Bool = false,
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon).font(.title3)
-                Text(title).font(.caption2)
+            VStack(spacing: 3) {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .regular))
+                    .frame(height: 26)
+                Text(title)
+                    .font(.caption2.weight(.medium))
             }
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .foregroundStyle(selected ? Color.accentColor : Color.primary)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .foregroundStyle(selected ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+            .background {
+                if selected {
+                    RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.12))
+                }
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.pressable)
         .accessibilityIdentifier(id)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     // MARK: - Actions
@@ -194,38 +229,51 @@ private struct FilterStrip: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: Theme.Space.sm) {
                 ForEach(ScanFilter.allCases) { filter in
+                    let selected = filter == page.filter
                     Button {
-                        if filter != page.filter { onSelect(filter) }
+                        if !selected { onSelect(filter) }
                     } label: {
-                        VStack(spacing: 4) {
+                        VStack(spacing: Theme.Space.xxs + 2) {
                             Group {
                                 if let image = previews[filter] {
                                     Image(uiImage: image).resizable().scaledToFill()
                                 } else {
-                                    Color.secondary.opacity(0.15)
+                                    Color(.tertiarySystemFill)
                                 }
                             }
-                            .frame(width: 64, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(filter == page.filter ? Color.accentColor : .clear, lineWidth: 3)
-                            )
+                            .frame(width: 62, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .strokeBorder(selected ? Color.accentColor : Color(.separator), lineWidth: selected ? 2.5 : 0.5)
+                            }
+                            .overlay(alignment: .topTrailing) {
+                                if selected {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 16))
+                                        .symbolRenderingMode(.palette)
+                                        .foregroundStyle(.white, Color.accentColor)
+                                        .padding(3)
+                                }
+                            }
                             Text(filter.displayName)
-                                .font(.caption2.weight(filter == page.filter ? .bold : .regular))
-                                .foregroundStyle(filter == page.filter ? Color.accentColor : Color.primary)
+                                .font(.caption2.weight(selected ? .semibold : .regular))
+                                .foregroundStyle(selected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)
                     .accessibilityIdentifier("filter-\(filter.rawValue)")
+                    .accessibilityLabel(filter.displayName)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
-            .padding(.horizontal)
-            .padding(.vertical, 10)
+            .padding(.horizontal, Theme.Space.md)
+            .padding(.vertical, Theme.Space.sm)
         }
         .background(.bar)
+        .overlay(alignment: .top) { Divider() }
         .task(id: "\(page.id)-\(page.quad.points)-\(page.rotation)") {
             let url = store.originalURL(documentID, page.id)
             let quad = page.quad

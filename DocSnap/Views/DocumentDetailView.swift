@@ -6,6 +6,7 @@ struct DocumentDetailView: View {
     @AppStorage(Settings.defaultFilterKey) private var defaultFilter: ScanFilter = .magicColor
     @AppStorage(Settings.pdfPageSizeKey) private var pageSize: PDFPageSize = .auto
     @AppStorage(Settings.searchablePDFKey) private var searchablePDF = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let documentID: UUID
 
@@ -47,13 +48,14 @@ struct DocumentDetailView: View {
         .sheet(item: $allText) { content in
             TextSheet(content: content)
         }
-        .alert("Rename", isPresented: $showRename) {
+        .alert("Rename Document", isPresented: $showRename) {
             TextField("Title", text: $renameText)
             Button("Cancel", role: .cancel) {}
             Button("Save") { try? store.rename(documentID, to: renameText) }
         }
         .confirmationDialog("Delete this document?", isPresented: $showDeleteDocument, titleVisibility: .visible) {
             Button("Delete Document", role: .destructive) {
+                Haptics.impact(.medium)
                 store.deleteDocument(documentID)
                 dismiss()
             }
@@ -76,64 +78,49 @@ struct DocumentDetailView: View {
                     Label("No Pages", systemImage: "doc")
                 } description: {
                     Text("Add pages with the camera or from Photos.")
+                } actions: {
+                    Button("Scan Pages", systemImage: "camera.viewfinder") { captureSource = .camera }
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
                 }
                 .accessibilityIdentifier("noPagesView")
                 .padding(.top, 80)
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 20) {
-                    ForEach(Array(document.pages.enumerated()), id: \.element.id) { index, page in
-                        NavigationLink(value: Route.page(documentID: documentID, pageID: page.id)) {
-                            VStack(spacing: 6) {
-                                PageImageView(documentID: documentID, page: page, maxPixelSize: 500)
-                                    .frame(height: 200)
-                                    .frame(maxWidth: .infinity)
-                                    .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
-                                Text("\(index + 1)")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: Theme.Space.md) {
+                    Text("\(document.pageCountText) · Edited \(document.updatedAt.formatted(.relative(presentation: .named)))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, Theme.Space.xxs)
+
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.Space.md)], spacing: Theme.Space.lg) {
+                        ForEach(Array(document.pages.enumerated()), id: \.element.id) { index, page in
+                            NavigationLink(value: Route.page(documentID: documentID, pageID: page.id)) {
+                                PageCell(documentID: documentID, page: page, number: index + 1)
                             }
+                            .buttonStyle(.pressable)
+                            .accessibilityIdentifier("pageCell")
+                            .contextMenu { pageActions(page) }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("pageCell")
                     }
                 }
-                .padding()
+                .padding(Theme.Space.md)
+                .motion(Theme.Motion.standard, value: document.pages.map(\.id), reduceMotion: reduceMotion)
             }
         }
         .background(Color(.systemGroupedBackground))
-        .safeAreaInset(edge: .bottom) { bottomBar(document) }
     }
 
-    private func bottomBar(_ document: ScanDocument) -> some View {
-        HStack(spacing: 12) {
-            Menu {
-                Button("Scan Pages", systemImage: "camera.viewfinder") { captureSource = .camera }
-                Button("Import from Photos", systemImage: "photo.on.rectangle") { captureSource = .photos }
-            } label: {
-                Label("Add", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-            }
-            .buttonStyle(.bordered)
-            .accessibilityIdentifier("addPagesMenu")
-
-            Menu {
-                Button("Share PDF", systemImage: "doc.richtext") { sharePDF() }
-                Button("Share Images (JPEG)", systemImage: "photo.stack") { shareImages() }
-            } label: {
-                Label("Share", systemImage: "square.and.arrow.up")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-            } primaryAction: {
-                sharePDF()
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(document.pages.isEmpty)
-            .accessibilityIdentifier("shareButton")
+    @ViewBuilder
+    private func pageActions(_ page: ScanPage) -> some View {
+        Button("Rotate", systemImage: "rotate.right") {
+            Haptics.impact()
+            Task { try? await store.editPage(page.id, in: documentID) { $0.rotation += 1 } }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(.bar)
+        Divider()
+        Button("Delete Page", systemImage: "trash", role: .destructive) {
+            Haptics.impact(.medium)
+            try? store.deletePage(page.id, from: documentID)
+        }
     }
 
     @ToolbarContentBuilder
@@ -148,6 +135,8 @@ struct DocumentDetailView: View {
                 Button("Reorder Pages", systemImage: "arrow.up.arrow.down") { showReorder = true }
                     .accessibilityIdentifier("reorderMenuItem")
                     .disabled(document.pages.count < 2)
+                Button("Share Images (JPEG)", systemImage: "photo.stack") { shareImages() }
+                    .disabled(document.pages.isEmpty)
                 Button("Extract All Text", systemImage: "text.viewfinder") { extractAllText() }
                     .accessibilityIdentifier("extractTextMenuItem")
                     .disabled(document.pages.isEmpty)
@@ -155,9 +144,37 @@ struct DocumentDetailView: View {
                 Button("Delete Document", systemImage: "trash", role: .destructive) { showDeleteDocument = true }
                     .accessibilityIdentifier("deleteDocumentMenuItem")
             } label: {
-                Image(systemName: "ellipsis.circle")
+                Label("More", systemImage: "ellipsis")
             }
             .accessibilityIdentifier("documentMenu")
+        }
+        ToolbarItem(placement: .bottomBar) {
+            Menu {
+                Button("Scan Pages", systemImage: "camera.viewfinder") { captureSource = .camera }
+                Button("Import from Photos", systemImage: "photo.on.rectangle.angled") { captureSource = .photos }
+            } label: {
+                Label("Add Pages", systemImage: "plus")
+            }
+            .accessibilityIdentifier("addPagesMenu")
+        }
+        if #available(iOS 26.0, *) {
+            ToolbarSpacer(.flexible, placement: .bottomBar)
+        } else {
+            ToolbarItem(placement: .bottomBar) { Spacer() }
+        }
+        ToolbarItem(placement: .bottomBar) {
+            // The main task gets the one prominent control (HIG: prominent style for the key action).
+            Button {
+                sharePDF()
+            } label: {
+                Label("Share PDF", systemImage: "square.and.arrow.up")
+                    .labelStyle(.titleAndIcon)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, Theme.Space.xs)
+            }
+            .disabled(document.pages.isEmpty)
+            .accessibilityIdentifier("shareButton")
+            .prominentToolbarButton()
         }
     }
 
@@ -169,7 +186,9 @@ struct DocumentDetailView: View {
             defer { busyMessage = nil }
             do {
                 try await store.addPages(pages, to: documentID, filter: defaultFilter)
+                Haptics.success()
             } catch {
+                Haptics.error()
                 errorMessage = error.localizedDescription
             }
         }
@@ -183,6 +202,7 @@ struct DocumentDetailView: View {
                 let url = try await store.exportPDF(documentID, pageSize: pageSize, searchable: searchablePDF)
                 shareItem = ShareItem(urls: [url])
             } catch {
+                Haptics.error()
                 errorMessage = error.localizedDescription
             }
         }
@@ -218,9 +238,11 @@ struct ReorderPagesView: View {
             List {
                 if let doc = store.document(documentID) {
                     ForEach(Array(doc.pages.enumerated()), id: \.element.id) { index, page in
-                        HStack(spacing: 14) {
+                        HStack(spacing: Theme.Space.sm) {
                             PageImageView(documentID: documentID, page: page, maxPixelSize: 160)
+                                .paperStyle()
                                 .frame(width: 44, height: 58)
+                                .accessibilityHidden(true)
                             Text("Page \(index + 1)")
                         }
                         .accessibilityIdentifier("reorderRow")
@@ -242,6 +264,45 @@ struct ReorderPagesView: View {
                     Button("Done") { dismiss() }
                 }
             }
+        }
+    }
+}
+
+/// A page thumbnail drawn as a sheet of paper with its number below.
+private struct PageCell: View {
+    let documentID: UUID
+    let page: ScanPage
+    let number: Int
+
+    var body: some View {
+        VStack(spacing: Theme.Space.xs) {
+            PageImageView(documentID: documentID, page: page, maxPixelSize: 500)
+                .paperStyle()
+                .frame(height: 200)
+                .frame(maxWidth: .infinity)
+            Text("\(number)")
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, Theme.Space.xs)
+                .padding(.vertical, 2)
+                .background(Color(.tertiarySystemFill), in: Capsule())
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Page \(number)")
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+private extension View {
+    /// The key action in a toolbar: `.prominent` glass on iOS 26, bordered-prominent before.
+    @ViewBuilder
+    func prominentToolbarButton() -> some View {
+        if #available(iOS 26.0, *) {
+            buttonStyle(.glassProminent)
+        } else {
+            buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
         }
     }
 }

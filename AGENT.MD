@@ -46,6 +46,27 @@ It holds the requirements, the expectations, and where the last session stopped.
 | Device install | **Free Apple ID** signing for now (app expires after 7 days → reinstall from Xcode). Paid account later only if the owner agrees |
 | Backend | None. Everything (detection, OCR, PDF) runs **on device** — no API keys needed today |
 
+### Design system (2026-10-27 redesign)
+
+- **Skills:**
+  - The owner installed the Apple HIG skills (`.claude/skills/hig-*`) and `ui-ux-pro-max` (`.agents/skills/`). Use them for UI work.
+  - They are git-ignored: third-party, unlicensed, Apple-copyrighted text.
+  - HIG project context lives in `.claude/apple-design-context.md`, which is committed.
+- **Style:**
+  - Minimal / Swiss: the paper is the hero. White page thumbnails get a hairline edge and a short soft shadow (`paperStyle()`).
+  - Use system semantic colors and SF Pro text styles. No custom fonts.
+- **Tokens:**
+  - `DocSnap/Views/Theme.swift` holds spacing (4/8 rhythm), radii, the 44 pt minimum target, motion, `Haptics`, and the `.pressable` button style.
+  - Accent "scan blue" lives in the asset catalog: #2563EB light, #3B82F6 dark, plus high-contrast variants. All are WCAG AA checked.
+- **iOS 26:**
+  - Liquid Glass (`.glass`, `.glassProminent`) only on controls (floating Scan/Import, the prominent toolbar Share), with `#available` fallbacks for iOS 17/18.
+  - Never use glass in the content layer.
+- **Accessibility:**
+  - Respect Reduce Motion (`motion(_:value:reduceMotion:)`).
+  - Cap badges and floating bars at large Dynamic Type sizes; the library grid goes to one column at accessibility sizes.
+  - Hide decorative thumbnails from VoiceOver, and combine card labels.
+- Before shipping UI, run the pre-delivery checklist in `.agents/skills/ui-ux-pro-max/references/pro-rules.md`.
+
 The UI and branding must be DocSnap's own. Match CamScanner's *features*, not its logo, name, or artwork.
 
 ## 4. Secrets and signing
@@ -103,6 +124,7 @@ Core (v0.1):
 - [x] Export JPEG images
 - [x] Share sheet → AirDrop, Files, Mail, Print, Save to Photos
 - [x] Settings: default filter, PDF page size, searchable PDF
+- [x] Library grid/list views, date sections, sorting
 
 Later (v0.2+):
 - [ ] Custom AVFoundation camera (doc / ID card / book modes, flash, grid) with live edge overlay
@@ -131,6 +153,14 @@ Done (session 1):
   - Fixed a found bug: after Rotate, a page turning landscape was drawn stale and overflowed until the next swipe (it now has a fixed full-size frame).
   - Crop is disabled while an edit is rendering.
 - Verified: border detection on sample photos, filters, PDF embeds the JPEGs as-is (3-page PDF ≈ the JPEGs' total size), searchable OCR text, Vietnamese titles.
+
+- **UI redesign (session 2, using the HIG + ui-ux-pro-max skills):**
+  - Library: "Documents" with grid/list views, date sections (Today, Yesterday, Previous 7 Days, month), sort (modified, created, name), an empty state with actions, and a floating Scan + Import.
+  - Document: paper cards, a page context menu (Rotate, Delete), a native bottom toolbar (Add Pages, prominent Share PDF), and "Share Images (JPEG)" in the … menu.
+  - Page viewer: a refined edit bar and filter strip, plus a non-blocking "Applying…" pill.
+  - Crop: new handle styling, with haptics on drag start and auto-detect.
+  - Settings: iOS Settings-style rows.
+  - Reviewed on the simulator in light, dark and largest Dynamic Type; 64/64 tests pass.
 
 Not verified yet (needs the real phone):
 - The VisionKit live camera (the simulator has no camera feed), AirDrop, real-paper detection quality, speed with 12 MP photos.

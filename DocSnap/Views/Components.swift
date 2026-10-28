@@ -95,13 +95,18 @@ struct BusyOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.35).ignoresSafeArea()
-            VStack(spacing: 12) {
+            Color.black.opacity(0.3).ignoresSafeArea()
+            VStack(spacing: Theme.Space.sm) {
                 ProgressView().controlSize(.large)
-                Text(message).font(.headline)
+                Text(message)
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.center)
             }
-            .padding(24)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, Theme.Space.lg)
+            .padding(.vertical, Theme.Space.lg)
+            .frame(minWidth: 160)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+            .shadow(color: .black.opacity(0.15), radius: 20, y: 8)
         }
         .accessibilityIdentifier("busyOverlay")
     }
@@ -112,4 +117,6 @@ enum Settings {
     static let defaultFilterKey = "defaultFilter"
     static let pdfPageSizeKey = "pdfPageSize"
     static let searchablePDFKey = "searchablePDF"
+    static let libraryLayoutKey = "libraryLayout"
+    static let librarySortKey = "librarySort"
 }

@@ -25,7 +25,7 @@ struct CropView: View {
     @State private var detecting = false
     @State private var notFound = false
 
-    private let handleSize: CGFloat = 28
+    private let handleSize: CGFloat = 22
     private let loupeSize: CGFloat = 120
     private let loupeZoom: CGFloat = 2.5
 
@@ -139,12 +139,12 @@ struct CropView: View {
                 p.addLines(pts)
                 p.closeSubpath()
             }
-            .fill(Color.black.opacity(0.45), style: FillStyle(eoFill: true))
+            .fill(Color.black.opacity(0.5), style: FillStyle(eoFill: true))
             Path { p in
                 p.addLines(pts)
                 p.closeSubpath()
             }
-            .stroke(quad.isValid ? Color.accentColor : Color.red, lineWidth: 2)
+            .stroke(quad.isValid ? Color.accentColor : Color.red, style: StrokeStyle(lineWidth: 2, lineJoin: .round))
         }
         .allowsHitTesting(false)
     }
@@ -156,8 +156,9 @@ struct CropView: View {
                 let a = pts[i], b = pts[(i + 1) % 4]
                 Capsule()
                     .fill(Color.white)
-                    .overlay(Capsule().stroke(Color.accentColor, lineWidth: 2))
-                    .frame(width: 26, height: 8)
+                    .overlay(Capsule().strokeBorder(Color.accentColor, lineWidth: 1.5))
+                    .frame(width: 28, height: 8)
+                    .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
                     .rotationEffect(.radians(atan2(b.y - a.y, b.x - a.x)))
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
@@ -166,9 +167,12 @@ struct CropView: View {
             }
             ForEach(0..<4, id: \.self) { i in
                 Circle()
-                    .fill(Color.white.opacity(0.25))
-                    .overlay(Circle().stroke(Color.accentColor, lineWidth: 3))
-                    .frame(width: handleSize, height: handleSize)
+                    .fill(Color.white)
+                    .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: 3))
+                    .frame(width: activeHandle == .corner(i) ? handleSize + 6 : handleSize,
+                           height: activeHandle == .corner(i) ? handleSize + 6 : handleSize)
+                    .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+                    .animation(.snappy(duration: 0.15), value: activeHandle)
                     .frame(width: 48, height: 48)
                     .contentShape(Rectangle())
                     .position(pts[i])
@@ -219,6 +223,7 @@ struct CropView: View {
                 if dragStart == nil {
                     dragStart = quad
                     activeHandle = handle
+                    Haptics.selection()
                 }
                 // One handle at a time: a second finger on another handle is ignored.
                 guard activeHandle == handle, let start = dragStart, rect.width > 0, rect.height > 0 else { return }
@@ -254,8 +259,10 @@ struct CropView: View {
             let found = await DocumentDetector.detect(in: cg)
             detecting = false
             if let found {
+                Haptics.success()
                 withAnimation(.snappy) { quad = found }
             } else {
+                Haptics.warning()
                 notFound = true
             }
         }

@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "skills": {
+    "hig-components-content": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-content/SKILL.md",
+      "computedHash": "9a63157168e6b30a75ba82fd876682cb551109cc894a23cc82a2d7fe31fe1bde"
+    },
+    "hig-components-controls": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-controls/SKILL.md",
+      "computedHash": "3a5ed8f1f6b6476b992f55a6fbd21c2f9913f0086a070f266da43891a478b07e"
+    },
+    "hig-components-dialogs": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-dialogs/SKILL.md",
+      "computedHash": "6e5ab57346c18ba1fc109a9f5547504279bc7e4e23631c271d3dcc2829ba7bf8"
+    },
+    "hig-components-layout": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-layout/SKILL.md",
+      "computedHash": "8d44bd7cb04cf0c3cd02afcb5b883e2c5f50f45dec70f9f2692281d712293e2f"
+    },
+    "hig-components-menus": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-menus/SKILL.md",
+      "computedHash": "cb451e2a6ecfb1cc91f5ca339e450e60d31094dbde9a02618cd33bd81ea8a47c"
+    },
+    "hig-components-search": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-search/SKILL.md",
+      "computedHash": "5d58a4f07123c0975384ec3646b0100bfb4e90e992d5009daeeacd478cd7e37c"
+    },
+    "hig-components-status": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-status/SKILL.md",
+      "computedHash": "eedf17e590f69275f0356191c0766c967c2f699cd6979f186254b99985b2c62f"
+    },
+    "hig-components-system": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-components-system/SKILL.md",
+      "computedHash": "4c87d9ae4bb50dc040490f626c6255d7d7a04eeed0b1ccf01cca7bea81717156"
+    },
+    "hig-foundations": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-foundations/SKILL.md",
+      "computedHash": "0a8a0119565e4ed548fec34a1c4844348c27702b3bc957c635bc2bd403f090de"
+    },
+    "hig-inputs": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-inputs/SKILL.md",
+      "computedHash": "aaeb494969de8a0b8225deb6374842adf366b614418ebcc31b82fdb95fa03294"
+    },
+    "hig-patterns": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-patterns/SKILL.md",
+      "computedHash": "eeb879f7bef3820fee7d02678047323c84f169683c5817458e09e56b9bc27a87"
+    },
+    "hig-platforms": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-platforms/SKILL.md",
+      "computedHash": "1503d5f3cee8212ee54ee53b3d1e21b12bbfdedef25cc13e67e6e5772e6d7e77"
+    },
+    "hig-project-context": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-project-context/SKILL.md",
+      "computedHash": "93fbda6ab170ffbbe2f50a487805514fb9491c85e6f07a3d652962a0cf324dc2"
+    },
+    "hig-technologies": {
+      "source": "raintree-technology/hig-doctor",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/hig-technologies/SKILL.md",
+      "computedHash": "193bad5496cf921794fad9c11968f2ec46ed6e55b2502a3fbfcbee28c02aa9a9"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "d63bd281a96b8dfa52a2656ec6e6af743bfcfde6f6bfb6c9edc203cbff377b16"
+    }
+  }
+}

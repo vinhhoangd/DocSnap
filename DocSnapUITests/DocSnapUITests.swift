@@ -122,7 +122,7 @@ final class DocSnapUITests: XCTestCase {
         XCTAssertTrue(rename.waitForExistence(timeout: 5))
         rename.tap()
 
-        let alert = app.alerts["Rename"]
+        let alert = app.alerts["Rename Document"]
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
         let field = alert.textFields.firstMatch // alert text fields don't expose SwiftUI identifiers
         XCTAssertTrue(field.waitForExistence(timeout: 5))
@@ -145,9 +145,11 @@ final class DocSnapUITests: XCTestCase {
         reorder.tap()
 
         XCTAssertTrue(app.navigationBars["Reorder Pages"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Page 1"].exists)
-        XCTAssertTrue(app.staticTexts["Page 2"].exists)
-        XCTAssertTrue(app.descendants(matching: .any)["reorderRow"].firstMatch.exists)
+        // Each row is one accessibility element (thumbnail hidden as decorative), labelled "Page N".
+        let rows = app.descendants(matching: .any).matching(identifier: "reorderRow")
+        XCTAssertTrue(rows.matching(NSPredicate(format: "label CONTAINS 'Page 1'")).firstMatch.waitForExistence(timeout: 5),
+                      app.debugDescription)
+        XCTAssertTrue(rows.matching(NSPredicate(format: "label CONTAINS 'Page 2'")).firstMatch.exists)
         app.navigationBars["Reorder Pages"].buttons["Done"].tap()
         waitForDisappearance(app.navigationBars["Reorder Pages"])
         XCTAssertEqual(app.buttons.matching(identifier: "pageCell").count, 2)

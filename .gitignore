@@ -34,3 +34,7 @@ android/**/build/
 
 # iCloud Drive conflict copies
 * 2.*
+
+# Third-party AI skills installed by the owner (no license files; HIG text is (c) Apple) -- keep local, not in the public repo
+.agents/
+.claude/skills/

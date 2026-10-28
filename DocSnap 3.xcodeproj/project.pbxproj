@@ -1,0 +1,650 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0F666013A5B650B5C3A49C71 /* Quad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 712DDF5BFBEB42A4CCEF8749 /* Quad.swift */; };
+		134B4810467986B94539EAED /* EditQueueAndImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3467FFD1A1A65F79B24703A1 /* EditQueueAndImportTests.swift */; };
+		17488C46BE381C4036A335B6 /* TextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FDFD6255F428320C0DA213 /* TextRecognizer.swift */; };
+		1C4B817F1F8EFD97D869F4EF /* PageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D7B79F65502CDBC4936869 /* PageViewer.swift */; };
+		1D5A5FEFB3F3D74973BD2FA4 /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EC8F6A357F48A61F3A8AFDB /* PDFExporter.swift */; };
+		1DCA8A3155581D2AAFA7F70C /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E6FC7CEA341BDCA889C83DC /* ImageProcessor.swift */; };
+		214EE24B9F024119E5853E32 /* DocSnapUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864811645FC1165A1A1D3226 /* DocSnapUITests.swift */; };
+		2A1D6C325947866157167090 /* ScanDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A817C856D3BA8234BCF0D46 /* ScanDocument.swift */; };
+		3DF7DF9DA2CE71B808E13851 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88DC27368A5934A5A5AD7C77 /* SettingsView.swift */; };
+		42E941761B6502DDCB4BC7BE /* ScanFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32EB0C7BE971B52C1BCA6E6F /* ScanFilter.swift */; };
+		56CD24EE83B6AAAAFF1432A7 /* QuadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB810951E1313E9F8028F978 /* QuadTests.swift */; };
+		670C83A611801D1846AF0B56 /* DeviceEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 359E40EAB53B26284251D105 /* DeviceEdgeCaseTests.swift */; };
+		78BD254EAF8CF66AE0B2C50A /* CaptureModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1978B1962A39A38DB62F7273 /* CaptureModifier.swift */; };
+		7C8BBA92B3C6F93AC33C9A3C /* CropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB63B12577C34CA032C47A2 /* CropView.swift */; };
+		82E32FEBE0AC3924EFBD7B87 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E7886E2B8F8852268A6A4870 /* Assets.xcassets */; };
+		AD8DA037B7EC305EC2EBE149 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3734BACA0A617F4D53616B0E /* SampleData.swift */; };
+		B7B0F9A9F0446621F3809897 /* DocSnapApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 730512823522FDC9A908CB9E /* DocSnapApp.swift */; };
+		C32A62D55F518B19060A7E3D /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03EE8D12422B190A824D3531 /* Components.swift */; };
+		DBC964AADFC4827CF18DE4B9 /* DocumentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45495B3B30EDF4DF65ABE879 /* DocumentDetailView.swift */; };
+		E08632E4149647814678BE1D /* DocumentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71D9FBDF59741E0B14E9CAA9 /* DocumentStore.swift */; };
+		E30F33B42E6092FD6271CC0D /* DocumentDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1495E5B9D54ECD3A956B9811 /* DocumentDetector.swift */; };
+		E8A6BD05E18F7A47509942B6 /* StoreAndExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBDDD8064F740C8E2404F313 /* StoreAndExportTests.swift */; };
+		F4C2D85479B28F229868201C /* ImageProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F5E9E87EBACF574B7C3DCB /* ImageProcessorTests.swift */; };
+		FEE8A06D0141290F17380946 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19E78EE505DBC49D052906B /* LibraryView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		755DE8E74F1F5488209A1C15 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0D9847EE7C484925B79B4C2E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3353CDA69C4E51EA2AC322EF;
+			remoteInfo = DocSnap;
+		};
+		A8F2AC71CAC9094CD5484FA1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0D9847EE7C484925B79B4C2E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3353CDA69C4E51EA2AC322EF;
+			remoteInfo = DocSnap;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		03EE8D12422B190A824D3531 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		1495E5B9D54ECD3A956B9811 /* DocumentDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentDetector.swift; sourceTree = "<group>"; };
+		1978B1962A39A38DB62F7273 /* CaptureModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureModifier.swift; sourceTree = "<group>"; };
+		32EB0C7BE971B52C1BCA6E6F /* ScanFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFilter.swift; sourceTree = "<group>"; };
+		3467FFD1A1A65F79B24703A1 /* EditQueueAndImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditQueueAndImportTests.swift; sourceTree = "<group>"; };
+		34D7B79F65502CDBC4936869 /* PageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewer.swift; sourceTree = "<group>"; };
+		359E40EAB53B26284251D105 /* DeviceEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceEdgeCaseTests.swift; sourceTree = "<group>"; };
+		3734BACA0A617F4D53616B0E /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		45495B3B30EDF4DF65ABE879 /* DocumentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentDetailView.swift; sourceTree = "<group>"; };
+		4BAEAB85A911F7750949BB3B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4D14B3AF18518104DAE1BEE5 /* DocSnapTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DocSnapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5EC8F6A357F48A61F3A8AFDB /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
+		659EDFF9AF1AB7CCBEFCCB1E /* DocSnap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DocSnap.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		712DDF5BFBEB42A4CCEF8749 /* Quad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quad.swift; sourceTree = "<group>"; };
+		71D9FBDF59741E0B14E9CAA9 /* DocumentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentStore.swift; sourceTree = "<group>"; };
+		730512823522FDC9A908CB9E /* DocSnapApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocSnapApp.swift; sourceTree = "<group>"; };
+		864811645FC1165A1A1D3226 /* DocSnapUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocSnapUITests.swift; sourceTree = "<group>"; };
+		88DC27368A5934A5A5AD7C77 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8A817C856D3BA8234BCF0D46 /* ScanDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanDocument.swift; sourceTree = "<group>"; };
+		8E6FC7CEA341BDCA889C83DC /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
+		9C88E070F6B294CDB673277A /* DocSnapUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DocSnapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B8F5E9E87EBACF574B7C3DCB /* ImageProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessorTests.swift; sourceTree = "<group>"; };
+		DAB63B12577C34CA032C47A2 /* CropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropView.swift; sourceTree = "<group>"; };
+		E7886E2B8F8852268A6A4870 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E7FDFD6255F428320C0DA213 /* TextRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRecognizer.swift; sourceTree = "<group>"; };
+		EB810951E1313E9F8028F978 /* QuadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuadTests.swift; sourceTree = "<group>"; };
+		EB8C6228ACABC447877AF5FC /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		F19E78EE505DBC49D052906B /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		FBDDD8064F740C8E2404F313 /* StoreAndExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreAndExportTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1E23B854D93D6FA710811FA2 /* DocSnapUITests */ = {
+			isa = PBXGroup;
+			children = (
+				864811645FC1165A1A1D3226 /* DocSnapUITests.swift */,
+			);
+			path = DocSnapUITests;
+			sourceTree = "<group>";
+		};
+		25AE8309615850AD91F902B1 /* DocSnap */ = {
+			isa = PBXGroup;
+			children = (
+				4BAEAB85A911F7750949BB3B /* Info.plist */,
+				37264A8F68DCCEE83EB2567D /* App */,
+				95D70AD4657DF1C1B2EEEA44 /* Models */,
+				348CF06ECB9DE05CB194699B /* Resources */,
+				945D5DE7FCB84A2C439F83E4 /* Services */,
+				A2383DE1AE30DD5A4F032AEA /* Views */,
+			);
+			path = DocSnap;
+			sourceTree = "<group>";
+		};
+		348CF06ECB9DE05CB194699B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E7886E2B8F8852268A6A4870 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		34F620A66BAFB6558B7A3319 /* DocSnapTests */ = {
+			isa = PBXGroup;
+			children = (
+				359E40EAB53B26284251D105 /* DeviceEdgeCaseTests.swift */,
+				3467FFD1A1A65F79B24703A1 /* EditQueueAndImportTests.swift */,
+				B8F5E9E87EBACF574B7C3DCB /* ImageProcessorTests.swift */,
+				EB810951E1313E9F8028F978 /* QuadTests.swift */,
+				FBDDD8064F740C8E2404F313 /* StoreAndExportTests.swift */,
+			);
+			path = DocSnapTests;
+			sourceTree = "<group>";
+		};
+		37264A8F68DCCEE83EB2567D /* App */ = {
+			isa = PBXGroup;
+			children = (
+				730512823522FDC9A908CB9E /* DocSnapApp.swift */,
+				3734BACA0A617F4D53616B0E /* SampleData.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		736E2FE93262CE237C98F0F4 = {
+			isa = PBXGroup;
+			children = (
+				C769F5531876C247F44A8056 /* Config */,
+				25AE8309615850AD91F902B1 /* DocSnap */,
+				34F620A66BAFB6558B7A3319 /* DocSnapTests */,
+				1E23B854D93D6FA710811FA2 /* DocSnapUITests */,
+				789D5CA50F0B2B8A0DA4F8E8 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		789D5CA50F0B2B8A0DA4F8E8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				659EDFF9AF1AB7CCBEFCCB1E /* DocSnap.app */,
+				4D14B3AF18518104DAE1BEE5 /* DocSnapTests.xctest */,
+				9C88E070F6B294CDB673277A /* DocSnapUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		945D5DE7FCB84A2C439F83E4 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				1495E5B9D54ECD3A956B9811 /* DocumentDetector.swift */,
+				71D9FBDF59741E0B14E9CAA9 /* DocumentStore.swift */,
+				8E6FC7CEA341BDCA889C83DC /* ImageProcessor.swift */,
+				5EC8F6A357F48A61F3A8AFDB /* PDFExporter.swift */,
+				E7FDFD6255F428320C0DA213 /* TextRecognizer.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		95D70AD4657DF1C1B2EEEA44 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				712DDF5BFBEB42A4CCEF8749 /* Quad.swift */,
+				8A817C856D3BA8234BCF0D46 /* ScanDocument.swift */,
+				32EB0C7BE971B52C1BCA6E6F /* ScanFilter.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A2383DE1AE30DD5A4F032AEA /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1978B1962A39A38DB62F7273 /* CaptureModifier.swift */,
+				03EE8D12422B190A824D3531 /* Components.swift */,
+				DAB63B12577C34CA032C47A2 /* CropView.swift */,
+				45495B3B30EDF4DF65ABE879 /* DocumentDetailView.swift */,
+				F19E78EE505DBC49D052906B /* LibraryView.swift */,
+				34D7B79F65502CDBC4936869 /* PageViewer.swift */,
+				88DC27368A5934A5A5AD7C77 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C769F5531876C247F44A8056 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				EB8C6228ACABC447877AF5FC /* Base.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3353CDA69C4E51EA2AC322EF /* DocSnap */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE6145DF83F9968D752E1B0A /* Build configuration list for PBXNativeTarget "DocSnap" */;
+			buildPhases = (
+				1C872EB1918FD7FB944428A0 /* Sources */,
+				FE5D942AC57521EC36A43956 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DocSnap;
+			packageProductDependencies = (
+			);
+			productName = DocSnap;
+			productReference = 659EDFF9AF1AB7CCBEFCCB1E /* DocSnap.app */;
+			productType = "com.apple.product-type.application";
+		};
+		49D35363A2B089B2DAC61369 /* DocSnapTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6E527F0B6DA4BFA76559D69B /* Build configuration list for PBXNativeTarget "DocSnapTests" */;
+			buildPhases = (
+				F48B8EE35DD4C5AF4A304255 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EEE0146C52FB46D79282BB8D /* PBXTargetDependency */,
+			);
+			name = DocSnapTests;
+			packageProductDependencies = (
+			);
+			productName = DocSnapTests;
+			productReference = 4D14B3AF18518104DAE1BEE5 /* DocSnapTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		78D0C4412039D791430C16BB /* DocSnapUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A23AA2DFEC771E92716D55C2 /* Build configuration list for PBXNativeTarget "DocSnapUITests" */;
+			buildPhases = (
+				76EC110DA91C102F368912E3 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4A0D1C05D0D4287C00A7AA4E /* PBXTargetDependency */,
+			);
+			name = DocSnapUITests;
+			packageProductDependencies = (
+			);
+			productName = DocSnapUITests;
+			productReference = 9C88E070F6B294CDB673277A /* DocSnapUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0D9847EE7C484925B79B4C2E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3353CDA69C4E51EA2AC322EF = {
+						DevelopmentTeam = "$(DOCSNAP_TEAM_ID)";
+						ProvisioningStyle = Automatic;
+					};
+					49D35363A2B089B2DAC61369 = {
+						DevelopmentTeam = "$(DOCSNAP_TEAM_ID)";
+						ProvisioningStyle = Automatic;
+					};
+					78D0C4412039D791430C16BB = {
+						DevelopmentTeam = "$(DOCSNAP_TEAM_ID)";
+						ProvisioningStyle = Automatic;
+						TestTargetID = 3353CDA69C4E51EA2AC322EF;
+					};
+				};
+			};
+			buildConfigurationList = 9DA68E0E29352B653CB02350 /* Build configuration list for PBXProject "DocSnap" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 736E2FE93262CE237C98F0F4;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 789D5CA50F0B2B8A0DA4F8E8 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3353CDA69C4E51EA2AC322EF /* DocSnap */,
+				49D35363A2B089B2DAC61369 /* DocSnapTests */,
+				78D0C4412039D791430C16BB /* DocSnapUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FE5D942AC57521EC36A43956 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				82E32FEBE0AC3924EFBD7B87 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1C872EB1918FD7FB944428A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78BD254EAF8CF66AE0B2C50A /* CaptureModifier.swift in Sources */,
+				C32A62D55F518B19060A7E3D /* Components.swift in Sources */,
+				7C8BBA92B3C6F93AC33C9A3C /* CropView.swift in Sources */,
+				B7B0F9A9F0446621F3809897 /* DocSnapApp.swift in Sources */,
+				DBC964AADFC4827CF18DE4B9 /* DocumentDetailView.swift in Sources */,
+				E30F33B42E6092FD6271CC0D /* DocumentDetector.swift in Sources */,
+				E08632E4149647814678BE1D /* DocumentStore.swift in Sources */,
+				1DCA8A3155581D2AAFA7F70C /* ImageProcessor.swift in Sources */,
+				FEE8A06D0141290F17380946 /* LibraryView.swift in Sources */,
+				1D5A5FEFB3F3D74973BD2FA4 /* PDFExporter.swift in Sources */,
+				1C4B817F1F8EFD97D869F4EF /* PageViewer.swift in Sources */,
+				0F666013A5B650B5C3A49C71 /* Quad.swift in Sources */,
+				AD8DA037B7EC305EC2EBE149 /* SampleData.swift in Sources */,
+				2A1D6C325947866157167090 /* ScanDocument.swift in Sources */,
+				42E941761B6502DDCB4BC7BE /* ScanFilter.swift in Sources */,
+				3DF7DF9DA2CE71B808E13851 /* SettingsView.swift in Sources */,
+				17488C46BE381C4036A335B6 /* TextRecognizer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		76EC110DA91C102F368912E3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				214EE24B9F024119E5853E32 /* DocSnapUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F48B8EE35DD4C5AF4A304255 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				670C83A611801D1846AF0B56 /* DeviceEdgeCaseTests.swift in Sources */,
+				134B4810467986B94539EAED /* EditQueueAndImportTests.swift in Sources */,
+				F4C2D85479B28F229868201C /* ImageProcessorTests.swift in Sources */,
+				56CD24EE83B6AAAAFF1432A7 /* QuadTests.swift in Sources */,
+				E8A6BD05E18F7A47509942B6 /* StoreAndExportTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4A0D1C05D0D4287C00A7AA4E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3353CDA69C4E51EA2AC322EF /* DocSnap */;
+			targetProxy = A8F2AC71CAC9094CD5484FA1 /* PBXContainerItemProxy */;
+		};
+		EEE0146C52FB46D79282BB8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3353CDA69C4E51EA2AC322EF /* DocSnap */;
+			targetProxy = 755DE8E74F1F5488209A1C15 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		030236DB3F9C67F25FB9C580 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DOCSNAP_BUNDLE_ID).tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DocSnap.app/DocSnap";
+			};
+			name = Release;
+		};
+		110323D43F5BDDC3A6BC0E2F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = DocSnap/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DOCSNAP_BUNDLE_ID)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		4B07E2DA43812292C1368400 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = EB8C6228ACABC447877AF5FC /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "$(DOCSNAP_TEAM_ID)";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		505125A165D4BA5DEEB30095 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = EB8C6228ACABC447877AF5FC /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "$(DOCSNAP_TEAM_ID)";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A791FF0694E61D9FFAF3C48B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DOCSNAP_BUNDLE_ID).tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DocSnap.app/DocSnap";
+			};
+			name = Debug;
+		};
+		C013AB36572A3EB7C77DBEF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DOCSNAP_BUNDLE_ID).uitests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DocSnap;
+			};
+			name = Debug;
+		};
+		CE68B51880EFAE00D30BA4FF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DOCSNAP_BUNDLE_ID).uitests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DocSnap;
+			};
+			name = Release;
+		};
+		F19A7E47C11D85CF2FFC652F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = DocSnap/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DOCSNAP_BUNDLE_ID)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6E527F0B6DA4BFA76559D69B /* Build configuration list for PBXNativeTarget "DocSnapTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A791FF0694E61D9FFAF3C48B /* Debug */,
+				030236DB3F9C67F25FB9C580 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9DA68E0E29352B653CB02350 /* Build configuration list for PBXProject "DocSnap" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				505125A165D4BA5DEEB30095 /* Debug */,
+				4B07E2DA43812292C1368400 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A23AA2DFEC771E92716D55C2 /* Build configuration list for PBXNativeTarget "DocSnapUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C013AB36572A3EB7C77DBEF8 /* Debug */,
+				CE68B51880EFAE00D30BA4FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EE6145DF83F9968D752E1B0A /* Build configuration list for PBXNativeTarget "DocSnap" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F19A7E47C11D85CF2FFC652F /* Debug */,
+				110323D43F5BDDC3A6BC0E2F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0D9847EE7C484925B79B4C2E /* Project object */;
+}
