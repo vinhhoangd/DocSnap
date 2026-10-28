@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14161D"/>
+      <stop offset="1" stop-color="#050608"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.15"/>
+    </linearGradient>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="72"/></filter>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="26"/></filter>
+    <clipPath id="tile"><rect width="1024" height="1024" rx="230"/></clipPath>
+    <clipPath id="page"><rect x="332" y="252" width="360" height="520" rx="42"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <circle cx="380" cy="420" r="230" fill="#2563EB" filter="url(#blur)"/>
+    <circle cx="660" cy="650" r="200" fill="#06B6D4" filter="url(#blur)"/>
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="40" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M196 318V196H318"/>
+    <path d="M706 196H828V318"/>
+    <path d="M828 706V828H706"/>
+    <path d="M318 828H196V706"/>
+  </g>
+  <rect x="340" y="272" width="360" height="520" rx="42" fill="#000000" fill-opacity="0.35" filter="url(#shadow)"/>
+  <rect x="332" y="252" width="360" height="520" rx="42" fill="url(#sheen)"/>
+  <g clip-path="url(#page)">
+    <path d="M332 252H520L332 560Z" fill="#FFFFFF" fill-opacity="0.08"/>
+  </g>
+  <rect x="334" y="254" width="356" height="516" rx="40" fill="none" stroke="url(#rim)" stroke-width="4"/>
+  <g fill="#FFFFFF">
+    <rect x="388" y="340" width="200" height="22" rx="11" fill-opacity="0.95"/>
+    <rect x="388" y="398" width="248" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="388" y="456" width="176" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="388" y="514" width="222" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="388" y="572" width="150" height="22" rx="11" fill-opacity="0.6"/>
+  </g>
+</svg>

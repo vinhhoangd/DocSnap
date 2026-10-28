@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1B1B22"/>
+      <stop offset="1" stop-color="#09090C"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.15"/>
+    </linearGradient>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="72"/></filter>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="24"/></filter>
+    <clipPath id="tile"><rect width="1024" height="1024" rx="230"/></clipPath>
+    <clipPath id="page"><rect x="350" y="268" width="360" height="510" rx="42"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <circle cx="370" cy="400" r="230" fill="#3B82F6" filter="url(#blur)"/>
+    <circle cx="680" cy="660" r="210" fill="#8B5CF6" filter="url(#blur)"/>
+  </g>
+  <g transform="rotate(-9 470 520)">
+    <rect x="290" y="250" width="360" height="510" rx="42" fill="#FFFFFF" fill-opacity="0.07" stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="4"/>
+  </g>
+  <rect x="358" y="288" width="360" height="510" rx="42" fill="#000000" fill-opacity="0.35" filter="url(#shadow)"/>
+  <rect x="350" y="268" width="360" height="510" rx="42" fill="url(#sheen)"/>
+  <g clip-path="url(#page)">
+    <path d="M350 268H540L350 580Z" fill="#FFFFFF" fill-opacity="0.08"/>
+  </g>
+  <rect x="352" y="270" width="356" height="506" rx="40" fill="none" stroke="url(#rim)" stroke-width="4"/>
+  <g fill="#FFFFFF">
+    <rect x="406" y="356" width="200" height="22" rx="11" fill-opacity="0.95"/>
+    <rect x="406" y="414" width="246" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="406" y="472" width="170" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="406" y="530" width="220" height="22" rx="11" fill-opacity="0.6"/>
+  </g>
+  <circle cx="640" cy="704" r="56" fill="#3B82F6"/>
+  <path d="M614 705L633 724L668 688" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

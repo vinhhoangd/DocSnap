@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15131F"/>
+      <stop offset="1" stop-color="#07060B"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.15"/>
+    </linearGradient>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="70"/></filter>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="26"/></filter>
+    <clipPath id="tile"><rect width="1024" height="1024" rx="230"/></clipPath>
+    <clipPath id="page"><path d="M374 242H598L692 336V748Q692 782 658 782H374Q340 782 340 748V276Q340 242 374 242Z"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <circle cx="320" cy="360" r="210" fill="#4F46E5" filter="url(#blur)"/>
+    <circle cx="720" cy="420" r="190" fill="#14B8A6" filter="url(#blur)"/>
+    <circle cx="520" cy="760" r="190" fill="#DB2777" filter="url(#blur)"/>
+  </g>
+  <path d="M382 262H606L700 356V768Q700 802 666 802H382Q348 802 348 768V296Q348 262 382 262Z" fill="#000000" fill-opacity="0.35" filter="url(#shadow)"/>
+  <path d="M374 242H598L692 336V748Q692 782 658 782H374Q340 782 340 748V276Q340 242 374 242Z" fill="url(#sheen)"/>
+  <g clip-path="url(#page)">
+    <path d="M340 242H530L340 550Z" fill="#FFFFFF" fill-opacity="0.08"/>
+  </g>
+  <path d="M374 244H597L690 337V748Q690 780 658 780H374Q342 780 342 748V276Q342 244 374 244Z" fill="none" stroke="url(#rim)" stroke-width="4"/>
+  <path d="M598 242V316Q598 336 618 336H692Z" fill="#FFFFFF" fill-opacity="0.38"/>
+  <g fill="#FFFFFF">
+    <rect x="396" y="336" width="160" height="22" rx="11" fill-opacity="0.95"/>
+    <rect x="396" y="400" width="240" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="396" y="458" width="200" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="396" y="516" width="236" height="22" rx="11" fill-opacity="0.6"/>
+    <rect x="396" y="574" width="150" height="22" rx="11" fill-opacity="0.6"/>
+  </g>
+</svg>
