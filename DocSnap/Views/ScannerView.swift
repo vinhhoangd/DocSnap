@@ -80,7 +80,8 @@ struct ScannerView: View {
 
     @ViewBuilder
     private func outline(in size: CGSize) -> some View {
-        if let quad = camera.quad, camera.status == .running {
+        // The border appears only once the phone is held still (never while it is moving).
+        if let quad = camera.quad, camera.status == .running, showsOutline {
             let points = quad.points.map { CGPoint(x: $0.x * size.width, y: $0.y * size.height) }
             let color = outlineColor
             ZStack {
@@ -88,7 +89,7 @@ struct ScannerView: View {
                     path.addLines(points)
                     path.closeSubpath()
                 }
-                .fill(color.opacity(0.18))
+                .fill(color.opacity(camera.phase == .captured ? 0.08 : 0.18))
                 Path { path in
                     path.addLines(points)
                     path.closeSubpath()
@@ -100,6 +101,15 @@ struct ScannerView: View {
                 }
             }
             .animation(reduceMotion ? nil : .linear(duration: 0.08), value: quad.points.map(\.x))
+        }
+    }
+
+    private var showsOutline: Bool {
+        switch camera.phase {
+        case .holding, .ready: true
+        // The saved page keeps a faint border only while the phone is still, never while moving on.
+        case .captured: camera.isDeviceStill
+        case .searching, .aligning: false
         }
     }
 
@@ -130,12 +140,14 @@ struct ScannerView: View {
         switch camera.phase {
         case .searching:
             return "Point the camera at a document"
+        case .aligning:
+            return "Hold your phone still"
         case .holding:
             return camera.holdDuration > 0 ? "Hold steady…" : "Tap the shutter to capture"
         case .ready:
             return "Capturing…"
         case .captured:
-            return pages.isEmpty ? "Capturing…" : "Page \(pages.count) saved · show the next page"
+            return pages.isEmpty ? "Capturing…" : "Page \(pages.count) saved · point at the next page"
         }
     }
 
@@ -208,31 +220,43 @@ struct ScannerView: View {
         .padding(.top, Theme.Space.xs)
     }
 
-    private var bottomBar: some View {
-        HStack {
-            ZStack(alignment: .topTrailing) {
-                Group {
-                    if let lastThumbnail {
-                        Image(uiImage: lastThumbnail).resizable().scaledToFill()
-                    } else {
-                        Color.white.opacity(0.08)
-                    }
-                }
-                .frame(width: 52, height: 68)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.4), lineWidth: 1))
-                if !pages.isEmpty {
-                    Text("\(pages.count)")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(minWidth: 20, minHeight: 20)
-                        .background(Color.accentColor, in: Circle())
-                        .offset(x: 8, y: -8)
+    /// Last captured page with the page count badge.
+    private var thumbnail: some View {
+        ZStack(alignment: .topTrailing) {
+            Group {
+                if let lastThumbnail {
+                    Image(uiImage: lastThumbnail).resizable().scaledToFill()
+                } else {
+                    Color.white.opacity(0.08)
                 }
             }
+            .frame(width: 52, height: 68)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(.white.opacity(0.4), lineWidth: 1))
+            if !pages.isEmpty {
+                Text("\(pages.count)")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(minWidth: 20, minHeight: 20)
+                    .background(Color.accentColor, in: Circle())
+                    .offset(x: 8, y: -8)
+            }
+        }
+    }
+
+    private var bottomBar: some View {
+        HStack {
+            // Tap the thumbnail to take back the last page (e.g. captured too early).
+            Menu {
+                Button("Remove Page \(pages.count)", systemImage: "trash", role: .destructive) { removeLastPage() }
+            } label: {
+                thumbnail
+            }
+            .disabled(pages.isEmpty || camera.isCapturing)
             .frame(width: 80, alignment: .leading)
-            .accessibilityElement(children: .ignore)
             .accessibilityLabel(pages.isEmpty ? "No pages yet" : "\(pages.count) pages scanned")
+            .accessibilityHint(pages.isEmpty ? "" : "Opens an option to remove the last page")
+            .accessibilityIdentifier("scannerThumbnail")
 
             Spacer()
 
@@ -313,7 +337,24 @@ struct ScannerView: View {
             let thumbnail = await Task.detached(priority: .utility) {
                 DocumentStore.loadImage(at: url, maxPixelSize: 200)
             }.value
-            lastThumbnail = thumbnail
+            // A slower load must not overwrite a newer (or removed) page's thumbnail.
+            if pages.last?.url == url { lastThumbnail = thumbnail }
+        }
+    }
+
+    private func removeLastPage() {
+        guard let last = pages.popLast() else { return }
+        try? FileManager.default.removeItem(at: last.url)
+        camera.rearm()
+        Haptics.impact(.medium)
+        UIAccessibility.post(notification: .announcement, argument: "Page removed")
+        lastThumbnail = nil
+        guard let previous = pages.last?.url else { return }
+        Task {
+            let thumbnail = await Task.detached(priority: .utility) {
+                DocumentStore.loadImage(at: previous, maxPixelSize: 200)
+            }.value
+            if pages.last?.url == previous { lastThumbnail = thumbnail }
         }
     }
 

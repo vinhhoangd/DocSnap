@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0447C7B0966F2A99B515A3B2 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E0D1BD85C17A312FAC69E9 /* CameraController.swift */; };
+		0BAAA5CB7669294BC0714D97 /* MotionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E733EA062069BD327C6DF75 /* MotionMonitor.swift */; };
 		0F666013A5B650B5C3A49C71 /* Quad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 712DDF5BFBEB42A4CCEF8749 /* Quad.swift */; };
 		134B4810467986B94539EAED /* EditQueueAndImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3467FFD1A1A65F79B24703A1 /* EditQueueAndImportTests.swift */; };
 		17488C46BE381C4036A335B6 /* TextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FDFD6255F428320C0DA213 /* TextRecognizer.swift */; };
@@ -79,6 +80,7 @@
 		712DDF5BFBEB42A4CCEF8749 /* Quad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quad.swift; sourceTree = "<group>"; };
 		71D9FBDF59741E0B14E9CAA9 /* DocumentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentStore.swift; sourceTree = "<group>"; };
 		730512823522FDC9A908CB9E /* DocSnapApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocSnapApp.swift; sourceTree = "<group>"; };
+		7E733EA062069BD327C6DF75 /* MotionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionMonitor.swift; sourceTree = "<group>"; };
 		7F8CEF2ABA35E06B41755D93 /* AnswerServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerServiceTests.swift; sourceTree = "<group>"; };
 		83D3004FFC56578AEFAF266F /* AnswerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnswerSheet.swift; sourceTree = "<group>"; };
 		864811645FC1165A1A1D3226 /* DocSnapUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocSnapUITests.swift; sourceTree = "<group>"; };
@@ -183,6 +185,7 @@
 				1495E5B9D54ECD3A956B9811 /* DocumentDetector.swift */,
 				71D9FBDF59741E0B14E9CAA9 /* DocumentStore.swift */,
 				8E6FC7CEA341BDCA889C83DC /* ImageProcessor.swift */,
+				7E733EA062069BD327C6DF75 /* MotionMonitor.swift */,
 				5EC8F6A357F48A61F3A8AFDB /* PDFExporter.swift */,
 				0112F552ED2531E008428737 /* StabilityTracker.swift */,
 				E7FDFD6255F428320C0DA213 /* TextRecognizer.swift */,
@@ -355,6 +358,7 @@
 				E08632E4149647814678BE1D /* DocumentStore.swift in Sources */,
 				1DCA8A3155581D2AAFA7F70C /* ImageProcessor.swift in Sources */,
 				FEE8A06D0141290F17380946 /* LibraryView.swift in Sources */,
+				0BAAA5CB7669294BC0714D97 /* MotionMonitor.swift in Sources */,
 				1D5A5FEFB3F3D74973BD2FA4 /* PDFExporter.swift in Sources */,
 				1C4B817F1F8EFD97D869F4EF /* PageViewer.swift in Sources */,
 				0F666013A5B650B5C3A49C71 /* Quad.swift in Sources */,

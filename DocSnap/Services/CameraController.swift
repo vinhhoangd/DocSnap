@@ -25,6 +25,8 @@ final class CameraController: NSObject {
     /// Width / height of the upright camera frame (the preview uses the same aspect).
     private(set) var frameAspect: CGFloat = 3.0 / 4.0
     private(set) var isCapturing = false
+    /// Whether the phone is currently held still (the border is only drawn then).
+    private(set) var isDeviceStill = false
     var flashMode: AVCaptureDevice.FlashMode = .off
 
     /// Called on the main actor with the saved photo file and the corners seen when it was taken.
@@ -42,6 +44,7 @@ final class CameraController: NSObject {
     /// Touched only on `sessionQueue`.
     @ObservationIgnored nonisolated(unsafe) private var configured = false
     @ObservationIgnored private var captureQuad: Quad?
+    @ObservationIgnored private let motion = MotionMonitor()
     /// Touched only on `videoQueue`.
     @ObservationIgnored nonisolated(unsafe) private var lastAnalysis: CFTimeInterval = 0
     @ObservationIgnored nonisolated(unsafe) private var lastAspect: CGFloat = 0
@@ -79,8 +82,9 @@ final class CameraController: NSObject {
         get { tracker.holdDuration }
         set {
             tracker.holdDuration = newValue
-            tracker.reset()
-            phase = .searching
+            // Keep a recent capture in mind: changing the delay mustn't re-capture the page in view.
+            tracker.restartHold()
+            phase = tracker.phase
         }
     }
 
@@ -131,6 +135,7 @@ final class CameraController: NSObject {
         } else {
             tracker.reset()
             smoother.reset()
+            motion.start()
             status = .running
         }
     }
@@ -139,8 +144,9 @@ final class CameraController: NSObject {
         guard status == .running else { return }
         status = .interrupted
         quad = nil
-        phase = .searching
-        tracker.reset()
+        // Don't forget a recent capture: after the interruption the same page may still be in view.
+        tracker.restartHold()
+        phase = tracker.phase
         smoother.reset()
     }
 
@@ -167,6 +173,7 @@ final class CameraController: NSObject {
         status = .idle
         quad = nil
         phase = .searching
+        motion.stop()
         sessionQueue.async { [session] in
             if session.isRunning { session.stopRunning() }
         }
@@ -235,7 +242,11 @@ final class CameraController: NSObject {
             smoothed = smoother.add(detected)
         }
         quad = smoothed
-        let newPhase = tracker.update(quad: smoothed, at: time)
+        let still = motion.isStill(at: time)
+        if still != isDeviceStill { isDeviceStill = still }
+        // The tracker sees real detection gaps right away (it has its own dropout tolerance);
+        // only the on-screen outline is held through brief misses.
+        let newPhase = tracker.update(quad: detected == nil ? nil : smoothed, deviceStill: still, at: time)
         phase = newPhase
         if newPhase == .ready { capture() }
     }
@@ -247,7 +258,7 @@ final class CameraController: NSObject {
         guard status == .running, !isCapturing else { return }
         isCapturing = true
         captureQuad = quad
-        tracker.didCapture(quad: quad)
+        tracker.didCapture(quad: quad, at: CACurrentMediaTime())
         phase = .captured
         let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
         settings.photoQualityPrioritization = .balanced
@@ -264,6 +275,11 @@ final class CameraController: NSObject {
             if photoOutput.maxPhotoDimensions.width > 0 { settings.maxPhotoDimensions = photoOutput.maxPhotoDimensions }
             photoOutput.capturePhoto(with: settings, delegate: self)
         }
+    }
+
+    /// After the user removes the last page, let the same sheet be scanned again without moving.
+    func rearm() {
+        tracker.rearm()
     }
 
     private func finishCapture(url: URL?, error: String?) {

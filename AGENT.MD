@@ -203,6 +203,15 @@ Known small issues / ideas:
 
 Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if server/ changed), then `scripts/deploy_phone.sh`. The phone script works over Wi‑Fi when the phone is unlocked on the same network.
 
+- 2026-10-29: Fixed: after page 1, the camera auto-captured before the owner pointed at page 2.
+  - Causes: any outline shift ≥ 15% counted as a "new page", and "steady" was judged from the image only.
+  - Now (`StabilityTracker`, `MotionMonitor`):
+    - The border and countdown run only while the phone is still (gyro/accelerometer).
+    - After a capture there is a 1.5 s cooldown, and auto-capture re-arms only on page-out-of-view ≥ 0.8 s, or ≥ 0.6 s of real movement plus (page dropped out > 0.35 s, or outline fully relocated ≥ 0.15).
+    - A hold ending on the just-captured spot is vetoed.
+    - Tap the scanner thumbnail to remove the last page; that re-arms.
+  - A content "fingerprint" was tried and rejected: different pages measured more alike than the same page relit.
+
 - 2026-10-28: The owner chose app icon **D6 · Frost Mono**: a frosted-glass page on graphite, with a blue accent.
   - Concepts are on the Design canvas https://claude.ai/artifact/SoysBLdh52y1fa12Uo5XTo and in `design/icon-concepts/`.
   - The source is `design/app-icon-d6.svg` (full-bleed). Run `scripts/render_icon.sh` (needs `brew install librsvg`) to regenerate AppIcon (1024, opaque) and the in-app AppLogo.
