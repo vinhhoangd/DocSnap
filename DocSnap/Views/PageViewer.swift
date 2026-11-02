@@ -41,7 +41,8 @@ struct PageViewer: View {
                         // A fixed, full-size frame: when a rotation turns the page from portrait to
                         // landscape in place, the paging view doesn't re-measure its content, so a
                         // size that depends on the image's aspect ratio would be drawn stale and overflow.
-                        PageImageView(documentID: documentID, page: page, maxPixelSize: 2400)
+                        // Full resolution, so zooming in shows the real scan detail.
+                        PageImageView(documentID: documentID, page: page, maxPixelSize: nil)
                             .paperStyle(radius: 4)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }

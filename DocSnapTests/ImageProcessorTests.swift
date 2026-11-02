@@ -1,4 +1,5 @@
 import CoreImage
+import CoreImage.CIFilterBuiltins
 import XCTest
 @testable import DocSnap
 
@@ -98,5 +99,84 @@ final class ImageProcessorTests: XCTestCase {
         let capped = try XCTUnwrap(ImageProcessor.normalizedCGImage(UIImage(cgImage: twoColorImage()), maxDimension: 50))
         XCTAssertEqual(capped.width, 50)
         XCTAssertEqual(capped.height, 25)
+    }
+
+    // MARK: - Scan quality
+
+    private let pageQuad = Quad(topLeft: CGPoint(x: 0.16, y: 0.12), topRight: CGPoint(x: 0.86, y: 0.15),
+                                bottomRight: CGPoint(x: 0.82, y: 0.88), bottomLeft: CGPoint(x: 0.12, y: 0.85))
+
+    /// The synthetic page photo, slightly out of focus like a hand-held shot.
+    private func blurredPagePhoto() throws -> CGImage {
+        let sharp = CIImage(cgImage: try XCTUnwrap(SampleData.photoOfPaper(lines: ["INVOICE 2026", "DocSnap sample page", "Total: 120.00"]).cgImage))
+        let blur = CIFilter.gaussianBlur()
+        blur.inputImage = sharp.clampedToExtent()
+        blur.radius = 1.5
+        return try XCTUnwrap(ImageProcessor.render(try XCTUnwrap(blur.outputImage).cropped(to: sharp.extent)))
+    }
+
+    /// 8-bit luminance, row-major with a top-left origin.
+    private func grayPixels(_ image: CGImage) -> [UInt8] {
+        var px = [UInt8](repeating: 0, count: image.width * image.height)
+        let ctx = CGContext(data: &px, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width,
+                            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue)!
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return px
+    }
+
+    /// Mean gradient magnitude over pixels that are neither paper nor ink core in `mask`.
+    private func edgeGradient(_ px: [UInt8], mask: [UInt8], width: Int, height: Int) -> Double {
+        var total = 0.0, count = 0
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                let i = y * width + x
+                guard mask[i] > 60, mask[i] < 200 else { continue }
+                let gx = Double(px[i + 1]) - Double(px[i - 1]), gy = Double(px[i + width]) - Double(px[i - width])
+                total += (gx * gx + gy * gy).squareRoot()
+                count += 1
+            }
+        }
+        XCTAssertGreaterThan(count, 1000, "the page should have text edges")
+        return total / Double(max(count, 1))
+    }
+
+    func testGrayscaleSharpensTextWithoutBrightRims() throws {
+        let photo = try blurredPagePhoto()
+        let out = try XCTUnwrap(ImageProcessor.process(photo, quad: pageQuad, rotation: 0, filter: .grayscale))
+        // The same filter without sharpening.
+        let plain = CIFilter.colorControls()
+        plain.inputImage = ImageProcessor.perspectiveCorrected(CIImage(cgImage: photo), quad: pageQuad)
+        plain.saturation = 0
+        plain.contrast = 1.1
+        plain.brightness = 0.02
+        let reference = try XCTUnwrap(ImageProcessor.render(try XCTUnwrap(plain.outputImage)))
+        XCTAssertEqual(out.width, reference.width)
+        let a = grayPixels(out), b = grayPixels(reference)
+        // Skip a 2 px border: the unclamped reference has partly transparent edge pixels.
+        var brighter = 0
+        for y in 2..<(out.height - 2) {
+            for x in 2..<(out.width - 2) where Int(a[y * out.width + x]) > Int(b[y * out.width + x]) + 2 { brighter += 1 }
+        }
+        XCTAssertLessThan(Double(brighter) / Double(a.count), 0.001, "sharpening must not lighten the paper around strokes")
+        let sharp = edgeGradient(a, mask: b, width: out.width, height: out.height)
+        let soft = edgeGradient(b, mask: b, width: out.width, height: out.height)
+        XCTAssertGreaterThan(sharp, soft * 1.15, "text edges should be noticeably crisper")
+    }
+
+    func testMagicColorWhitensPaperAndKeepsInkDark() throws {
+        let out = try XCTUnwrap(ImageProcessor.process(try blurredPagePhoto(), quad: pageQuad, rotation: 0, filter: .magicColor))
+        let px = grayPixels(out)
+        // Paper samples away from the text, including the shadowed bottom-right.
+        for (fx, fy) in [(0.1, 0.6), (0.5, 0.7), (0.9, 0.9), (0.9, 0.5)] {
+            let i = Int(fy * Double(out.height - 1)) * out.width + Int(fx * Double(out.width - 1))
+            XCTAssertGreaterThanOrEqual(px[i], 245, "paper at \(fx),\(fy)")
+        }
+        XCTAssertGreaterThan(px.filter { $0 < 50 }.count, 2000, "the text should stay dark")
+    }
+
+    func testStoredImagesKeepHighJPEGQuality() {
+        XCTAssertGreaterThanOrEqual(ImageProcessor.originalJPEGQuality, 0.95)
+        XCTAssertGreaterThanOrEqual(ImageProcessor.processedJPEGQuality, 0.9)
+        XCTAssertGreaterThanOrEqual(ImageProcessor.maxStoredDimension, 4032, "a 12 MP photo must keep full resolution")
     }
 }

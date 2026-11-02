@@ -165,7 +165,8 @@ final class DocumentStore {
                             // Applies EXIF orientation and caps the size while decoding.
                             decoded = ImageProcessor.loadCGImage(at: url, maxPixelSize: ImageProcessor.maxStoredDimension)
                         }
-                        guard let cg = decoded, let originalData = ImageProcessor.jpegData(cg, quality: 0.9) else {
+                        guard let cg = decoded,
+                              let originalData = ImageProcessor.jpegData(cg, quality: ImageProcessor.originalJPEGQuality) else {
                             throw StoreError.imageProcessingFailed
                         }
                         let quad = requestedQuad ?? DocumentDetector.detectSync(in: cg) ?? quadHint ?? .full
@@ -386,7 +387,7 @@ final class DocumentStore {
 
     nonisolated private static func renderProcessed(original: CGImage, page: ScanPage, to url: URL) throws {
         guard let processed = ImageProcessor.process(original, page: page),
-              let data = ImageProcessor.jpegData(processed, quality: 0.85) else {
+              let data = ImageProcessor.jpegData(processed, quality: ImageProcessor.processedJPEGQuality) else {
             throw StoreError.imageProcessingFailed
         }
         try data.write(to: url, options: .atomic)

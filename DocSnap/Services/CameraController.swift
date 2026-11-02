@@ -43,6 +43,8 @@ final class CameraController: NSObject {
     @ObservationIgnored private var smoother = QuadSmoother()
     /// Touched only on `sessionQueue`.
     @ObservationIgnored nonisolated(unsafe) private var configured = false
+    /// The active camera, for focus control. Touched only on `sessionQueue`.
+    @ObservationIgnored nonisolated(unsafe) private var captureDevice: AVCaptureDevice?
     @ObservationIgnored private var captureQuad: Quad?
     @ObservationIgnored private let motion = MotionMonitor()
     /// Touched only on `videoQueue`.
@@ -195,7 +197,9 @@ final class CameraController: NSObject {
             }
             if session.canAddOutput(photoOutput) {
                 session.addOutput(photoOutput)
-                photoOutput.maxPhotoQualityPrioritization = .balanced
+                // .quality lets the iPhone use Deep Fusion / Smart HDR for the most text detail;
+                // the extra capture time doesn't matter because the phone is held still.
+                photoOutput.maxPhotoQualityPrioritization = .quality
                 // Full sensor resolution (12 MP on iPhone 13 Pro) for sharp text.
                 if let largest = device.activeFormat.supportedMaxPhotoDimensions.max(by: { $0.width * $0.height < $1.width * $1.height }) {
                     photoOutput.maxPhotoDimensions = largest
@@ -211,6 +215,7 @@ final class CameraController: NSObject {
             }
             session.commitConfiguration()
             configureFocus(device)
+            captureDevice = device
             configured = true
         }
         if !session.isRunning { session.startRunning() }
@@ -246,8 +251,13 @@ final class CameraController: NSObject {
         if still != isDeviceStill { isDeviceStill = still }
         // The tracker sees real detection gaps right away (it has its own dropout tolerance);
         // only the on-screen outline is held through brief misses.
+        let previousPhase = phase
         let newPhase = tracker.update(quad: detected == nil ? nil : smoothed, deviceStill: still, at: time)
         phase = newPhase
+        // A new hold just started: focus and expose on the page itself, not the background.
+        if case .holding(let progress) = newPhase, progress == 0, previousPhase != newPhase, let smoothed {
+            focus(on: smoothed)
+        }
         if newPhase == .ready { capture() }
     }
 
@@ -261,7 +271,7 @@ final class CameraController: NSObject {
         tracker.didCapture(quad: quad, at: CACurrentMediaTime())
         phase = .captured
         let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
-        settings.photoQualityPrioritization = .balanced
+        settings.photoQualityPrioritization = .quality
         let flashMode = flashMode
         sessionQueue.async { [self] in
             // capturePhoto raises an Objective-C exception without an active connection (e.g. interrupted).
@@ -271,9 +281,39 @@ final class CameraController: NSObject {
                 }
                 return
             }
+            waitForFocusToSettle()
             if photoOutput.supportedFlashModes.contains(flashMode) { settings.flashMode = flashMode }
             if photoOutput.maxPhotoDimensions.width > 0 { settings.maxPhotoDimensions = photoOutput.maxPhotoDimensions }
             photoOutput.capturePhoto(with: settings, delegate: self)
+        }
+    }
+
+    /// Points focus and exposure at the page's center (then keeps adjusting continuously there).
+    private func focus(on quad: Quad) {
+        let cx = quad.points.map(\.x).reduce(0, +) / 4
+        let cy = quad.points.map(\.y).reduce(0, +) / 4
+        // Frames are rotated 90° to portrait; device points use the sensor's landscape space.
+        let devicePoint = CGPoint(x: cy, y: 1 - cx)
+        sessionQueue.async { [self] in
+            guard let device = captureDevice, (try? device.lockForConfiguration()) != nil else { return }
+            if device.isFocusPointOfInterestSupported, device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusPointOfInterest = devicePoint
+                device.focusMode = .continuousAutoFocus
+            }
+            if device.isExposurePointOfInterestSupported, device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposurePointOfInterest = devicePoint
+                device.exposureMode = .continuousAutoExposure
+            }
+            device.unlockForConfiguration()
+        }
+    }
+
+    /// Runs on `sessionQueue`: don't take the photo mid-refocus (a common cause of soft scans).
+    nonisolated private func waitForFocusToSettle(timeout: TimeInterval = 0.6) {
+        guard let device = captureDevice else { return }
+        let deadline = Date().addingTimeInterval(timeout)
+        while device.isAdjustingFocus, Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.02)
         }
     }
 

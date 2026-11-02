@@ -141,7 +141,7 @@ struct CaptureModifier: ViewModifier {
                 for index in 0..<scan.pageCount {
                     autoreleasepool {
                         let url = folder.appendingPathComponent("\(UUID().uuidString).jpg")
-                        if let data = scan.imageOfPage(at: index).jpegData(compressionQuality: 0.92),
+                        if let data = scan.imageOfPage(at: index).jpegData(compressionQuality: ImageProcessor.originalJPEGQuality),
                            (try? data.write(to: url)) != nil {
                             urls.append(url)
                         }

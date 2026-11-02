@@ -10,6 +10,11 @@ enum ImageProcessor {
 
     /// Longest edge kept for stored originals. A 13 Pro photo is 4032 px; this keeps full detail.
     static let maxStoredDimension: CGFloat = 4096
+    /// The stored original is the source for every re-edit, so keep it near-lossless.
+    static let originalJPEGQuality: CGFloat = 0.95
+    /// The finished page (shown, shared, embedded in PDFs as-is). High enough that text edges
+    /// stay clean; about 1–2 MB for a full-page scan.
+    static let processedJPEGQuality: CGFloat = 0.92
 
     // MARK: - Whole pipeline
 
@@ -63,22 +68,27 @@ enum ImageProcessor {
         case .original:
             return image
         case .grayscale:
-            return colorControls(image, saturation: 0, contrast: 1.1, brightness: 0.02)
+            let gray = colorControls(image, saturation: 0, contrast: 1.1, brightness: 0.02)
+            // Gray paper stays gray, so a sharpen's bright rims would show: keep only its darkening half.
+            return darkeningOnly(unsharpMasked(gray, radiusScale: 1.2, intensity: 0.55), over: gray)
         case .lighten:
             let exposure = CIFilter.exposureAdjust()
             exposure.inputImage = image
             exposure.ev = 0.7
-            return colorControls(exposure.outputImage ?? image, saturation: 1.05, contrast: 1.05, brightness: 0)
+            let lighter = colorControls(exposure.outputImage ?? image, saturation: 1.05, contrast: 1.05, brightness: 0)
+            return darkeningOnly(sharpenedLuminance(lighter, sharpness: 0.45), over: lighter)
         case .magicColor:
-            // Divide out uneven lighting so paper turns white and ink keeps its color.
-            let flat = flattenedLighting(image)
-            let stretched = levels(flat, black: 0.06, white: 0.92)
+            // Divide out uneven lighting so paper turns white and ink keeps its color; sharpen the
+            // text before the levels stretch, so sharpening halos and paper grain clip to white.
+            let flat = sharpenedLuminance(flattenedLighting(image), sharpness: 0.7)
+            let stretched = levels(flat, black: 0.06, white: 0.85)
             return colorControls(stretched, saturation: 1.25, contrast: 1.08, brightness: 0)
         case .blackWhite:
             let gray = colorControls(image, saturation: 0, contrast: 1, brightness: 0)
             let flat = flattenedLighting(gray)
-            // Steep (not hard) threshold keeps anti-aliased text edges. Values are in linear light.
-            return levels(flat, black: 0.32, white: 0.62)
+            // Crisp strokes first, then a steep (not hard) threshold that keeps anti-aliased edges.
+            // Values are in linear light.
+            return levels(unsharpMasked(flat, radiusScale: 1, intensity: 0.9), black: 0.32, white: 0.62)
         }
     }
 
@@ -144,6 +154,40 @@ enum ImageProcessor {
         f.contrast = contrast
         f.brightness = brightness
         return f.outputImage ?? image
+    }
+
+    /// Sharpening radius in pixels for an image of this size: text strokes scale with resolution,
+    /// so a fixed radius would be too weak on 12 MP scans and too strong on small previews.
+    private static func sharpenRadius(for image: CIImage) -> Float {
+        let longest = max(image.extent.width, image.extent.height)
+        return Float(min(max(longest / 1500, 1), 3.5))
+    }
+
+    /// Luminance-only sharpening (no color fringes) for color documents.
+    private static func sharpenedLuminance(_ image: CIImage, sharpness: Float) -> CIImage {
+        let f = CIFilter.sharpenLuminance()
+        f.inputImage = image.clampedToExtent()
+        f.sharpness = sharpness
+        f.radius = sharpenRadius(for: image)
+        return (f.outputImage ?? image).cropped(to: image.extent)
+    }
+
+    /// Unsharp mask for gray / black-and-white documents: crisper text strokes.
+    private static func unsharpMasked(_ image: CIImage, radiusScale: Float, intensity: Float) -> CIImage {
+        let f = CIFilter.unsharpMask()
+        f.inputImage = image.clampedToExtent()
+        f.radius = sharpenRadius(for: image) * radiusScale
+        f.intensity = intensity
+        return (f.outputImage ?? image).cropped(to: image.extent)
+    }
+
+    /// Keeps the darker of the two at each pixel: strokes get crisper edges, the paper around them
+    /// is never brightened.
+    private static func darkeningOnly(_ sharpened: CIImage, over base: CIImage) -> CIImage {
+        let f = CIFilter.darkenBlendMode()
+        f.inputImage = sharpened
+        f.backgroundImage = base
+        return (f.outputImage ?? base).cropped(to: base.extent)
     }
 
     /// Linear stretch: `black` maps to 0, `white` to 1, clamped.

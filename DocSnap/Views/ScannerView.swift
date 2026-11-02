@@ -143,6 +143,8 @@ struct ScannerView: View {
         case .aligning:
             return "Hold your phone still"
         case .holding:
+            // A page filling little of the frame gets few pixels: suggest moving closer.
+            if let quad = camera.quad, quad.area < 0.3 { return "Move closer for a sharper scan" }
             return camera.holdDuration > 0 ? "Hold steady…" : "Tap the shutter to capture"
         case .ready:
             return "Capturing…"

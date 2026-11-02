@@ -142,7 +142,7 @@ Later (v0.2+):
 
 ## 9. Status / next steps (update before every stop)
 
-**Last updated:** 2026-10-27
+**Last updated:** 2026-11-02
 
 Done (session 1):
 - Project created; v0.1 features in §8 implemented and pushed.
@@ -216,6 +216,32 @@ Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if ser
 - 2026-10-28: The owner chose app icon **D6 · Frost Mono**: a frosted-glass page on graphite, with a blue accent.
   - Concepts are on the Design canvas https://claude.ai/artifact/SoysBLdh52y1fa12Uo5XTo and in `design/icon-concepts/`.
   - The source is `design/app-icon-d6.svg` (full-bleed). Run `scripts/render_icon.sh` (needs `brew install librsvg`) to regenerate AppIcon (1024, opaque) and the in-app AppLogo.
+
+- 2026-11-02: Sharper scans (owner: "some papers look a bit blurry after I scan"; wants CamScanner quality).
+  - Camera:
+    - photos use `.quality` prioritization instead of `.balanced`
+    - when a hold starts, focus and exposure move to the page centre
+    - the shutter waits (up to 0.6 s) for focus to settle
+  - Filters (`ImageProcessor`): text sharpening sized to the image (radius = longest/1500, 1–3.5 px).
+    - Magic Color: luminance sharpen before the stretch, and the white point is lowered 0.92 → 0.85, so paper grain clips to white.
+    - B&W: unsharp mask before the threshold.
+    - Grayscale / Lighten: darken-only sharpening, because their paper stays gray and bright rims would show.
+  - Storage and display:
+    - JPEG quality for originals 0.9 → 0.95, for pages 0.85 → 0.92
+    - the page viewer shows full resolution
+    - a "Move closer for a sharper scan" hint when the page fills under 30 % of the frame
+  - Measured on the owner's homework photo at full 4K. The photo itself is not in the repo.
+
+    | Filter | Metric | Before | After |
+    |---|---|---|---|
+    | Magic Color | edge gradient | 153 | 185 |
+    | Magic Color | paper pure white | 58 % | 81 % |
+    | Magic Color | paper grain (std) | 7.3 | 5.9 |
+    | B&W | text-edge Laplacian | 1419 | 1918 |
+    | Grayscale | text-edge Laplacian | 312 | 613 |
+
+    Grayscale bright rims are gone (darken-only).
+  - Regression tests in `ImageProcessorTests` use a synthetic blurred page: no bright rims plus crisper edges for Grayscale, white paper plus dark ink for Magic Color, and the JPEG/size floors. Suites: 173 unit, 14 UI.
 
 Next up:
 1. Owner tries the hold-steady camera and the Answer button on the iPhone and reports back.
