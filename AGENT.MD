@@ -211,6 +211,7 @@ Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if ser
     - A hold ending on the just-captured spot is vetoed.
     - Tap the scanner thumbnail to remove the last page; that re-arms.
   - A content "fingerprint" was tried and rejected: different pages measured more alike than the same page relit.
+  - The owner confirmed on 2026-11-02, on the iPhone 13 Pro: "Works well now".
 
 - 2026-10-28: The owner chose app icon **D6 · Frost Mono**: a frosted-glass page on graphite, with a blue accent.
   - Concepts are on the Design canvas https://claude.ai/artifact/SoysBLdh52y1fa12Uo5XTo and in `design/icon-concepts/`.
