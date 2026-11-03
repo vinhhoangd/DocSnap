@@ -241,6 +241,7 @@ Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if ser
     | Grayscale | text-edge Laplacian | 312 | 613 |
 
     Grayscale bright rims are gone (darken-only).
+  - The owner confirmed on 2026-11-02, on the iPhone 13 Pro: "Looks sharp now".
   - Regression tests in `ImageProcessorTests` use a synthetic blurred page: no bright rims plus crisper edges for Grayscale, white paper plus dark ink for Magic Color, and the JPEG/size floors. Suites: 173 unit, 14 UI.
 
 Next up:
