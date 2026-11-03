@@ -123,6 +123,8 @@ enum Settings {
     static let scannerKey = "scanner"
     static let autoCaptureDelayKey = "autoCaptureDelay"
     static let librarySortKey = "librarySort"
+    /// Show the Adjust Borders step after scanning or importing (default on, like CamScanner).
+    static let reviewBordersKey = "reviewBorders"
 }
 
 /// App-wide light/dark override (the owner asked for it; System follows iOS).

@@ -46,6 +46,8 @@ final class CameraController: NSObject {
     /// The active camera, for focus control. Touched only on `sessionQueue`.
     @ObservationIgnored nonisolated(unsafe) private var captureDevice: AVCaptureDevice?
     @ObservationIgnored private var captureQuad: Quad?
+    /// Set by `holdOffAutoCapture`: the outline to treat as just captured once running.
+    @ObservationIgnored private var pendingHoldOff: Quad??
     @ObservationIgnored private let motion = MotionMonitor()
     /// Touched only on `videoQueue`.
     @ObservationIgnored nonisolated(unsafe) private var lastAnalysis: CFTimeInterval = 0
@@ -139,6 +141,7 @@ final class CameraController: NSObject {
             smoother.reset()
             motion.start()
             status = .running
+            applyPendingHoldOff()
         }
     }
 
@@ -173,6 +176,8 @@ final class CameraController: NSObject {
 
     func stop() {
         status = .idle
+        // A hold-off belongs to the restart it was requested for, not to a later scan.
+        pendingHoldOff = nil
         quad = nil
         phase = .searching
         motion.stop()
@@ -315,6 +320,21 @@ final class CameraController: NSObject {
         while device.isAdjustingFocus, Date() < deadline {
             Thread.sleep(forTimeInterval: 0.02)
         }
+    }
+
+    /// After returning to the camera (e.g. from Adjust Borders): treat the page in view as already
+    /// captured, so the user must move on to a new page before auto-capture fires again.
+    /// Applies right away while running, otherwise when the camera next starts.
+    func holdOffAutoCapture(lastCaptured quad: Quad?) {
+        pendingHoldOff = .some(quad)
+        if status == .running { applyPendingHoldOff() }
+    }
+
+    private func applyPendingHoldOff() {
+        guard case .some(let quad) = pendingHoldOff else { return }
+        pendingHoldOff = nil
+        tracker.holdOff(lastCaptured: quad, at: CACurrentMediaTime())
+        phase = tracker.phase
     }
 
     /// After the user removes the last page, let the same sheet be scanned again without moving.

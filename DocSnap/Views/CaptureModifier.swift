@@ -16,6 +16,13 @@ struct CaptureModifier: ViewModifier {
     @Binding var source: CaptureSource?
     let onCapture: ([DocumentStore.NewPage]) -> Void
     @AppStorage(Settings.scannerKey) private var scanner: ScannerKind = .docsnap
+    @AppStorage(Settings.reviewBordersKey) private var reviewBorders = true
+
+    /// Imported photos waiting on the Adjust Borders screen.
+    private struct ReviewBatch: Identifiable {
+        let id = UUID()
+        let pages: [ScanReviewView.Page]
+    }
 
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var showCameraUnavailable = false
@@ -23,6 +30,7 @@ struct CaptureModifier: ViewModifier {
     @State private var showCameraDenied = false
     @State private var importMessage: String?
     @State private var loading = false
+    @State private var reviewBatch: ReviewBatch?
 
     func body(content: Content) -> some View {
         content
@@ -53,6 +61,27 @@ struct CaptureModifier: ViewModifier {
             .overlay {
                 if loading { BusyOverlay(message: "Importing…") }
             }
+            .background {
+                // Attached to a separate view so it doesn't compete with the camera's cover.
+                Color.clear.fullScreenCover(item: $reviewBatch) { batch in
+                    ScanReviewView(
+                        pages: batch.pages,
+                        leadingAction: .cancel,
+                        onSave: { quads in
+                            reviewBatch = nil
+                            onCapture(zip(batch.pages, quads).map { DocumentStore.NewPage(fileURL: $0.url, quad: $1) })
+                        },
+                        onLeave: { _ in
+                            reviewBatch = nil
+                            // The photos stay in the library; only the temporary copies go.
+                            for page in batch.pages { try? FileManager.default.removeItem(at: page.url) }
+                        }
+                    )
+                }
+            }
+            #if DEBUG
+            .task { await runReviewImportIfRequested() }
+            #endif
             .alert("Camera Access Needed", isPresented: $showCameraDenied) {
                 Button("Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
@@ -162,6 +191,7 @@ struct CaptureModifier: ViewModifier {
     /// Copies the picked photos' encoded data to temp files without decoding them.
     private func loadPhotos(_ items: [PhotosPickerItem]) {
         loading = true
+        let started = ContinuousClock.now
         Task {
             let folder = DocumentStore.captureDirectory
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -182,9 +212,36 @@ struct CaptureModifier: ViewModifier {
                     ? "The selected photos couldn't be imported. If they're stored in iCloud, check your connection and try again."
                     : "\(failed) of \(items.count) photos couldn't be imported."
             }
-            if !pages.isEmpty { onCapture(pages) }
+            await finishImport(pages, started: started)
         }
     }
+
+    /// Imported photo files → the Adjust Borders screen (or straight to the document when it's off).
+    private func finishImport(_ pages: [DocumentStore.NewPage], started: ContinuousClock.Instant) async {
+        guard !pages.isEmpty else { return }
+        if reviewBorders {
+            // Presenting while the picker is still animating away can be silently dropped.
+            let settle = Duration.milliseconds(600) - (ContinuousClock.now - started)
+            if settle > .zero { try? await Task.sleep(for: settle) }
+            reviewBatch = ReviewBatch(pages: pages.compactMap { page in
+                if case .file(let url) = page.source { ScanReviewView.Page(url: url) } else { nil }
+            })
+        } else {
+            onCapture(pages)
+        }
+    }
+
+    #if DEBUG
+    /// UI tests: imports `SampleData`'s synthetic photos through the same path as a Photos import.
+    private func runReviewImportIfRequested() async {
+        guard SampleData.takeReviewImport() else { return }
+        // The app's launch task clears the capture folder (`cleanExports`); let it run first.
+        try? await Task.sleep(for: .milliseconds(500))
+        let started = ContinuousClock.now
+        let urls = await Task.detached(priority: .userInitiated) { SampleData.writeReviewImportPhotos() }.value
+        await finishImport(urls.map { DocumentStore.NewPage(fileURL: $0, quad: nil) }, started: started)
+    }
+    #endif
 }
 
 extension View {

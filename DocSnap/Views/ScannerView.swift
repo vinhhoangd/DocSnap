@@ -5,6 +5,7 @@ import SwiftUI
 /// ring and then captures automatically (or tap the shutter). Multi-page: keep scanning, then Save.
 struct ScannerView: View {
     @AppStorage(Settings.autoCaptureDelayKey) private var delay: AutoCaptureDelay = .oneAndHalf
+    @AppStorage(Settings.reviewBordersKey) private var reviewBorders = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let onFinish: ([DocumentStore.NewPage]) -> Void
@@ -13,7 +14,10 @@ struct ScannerView: View {
     struct CapturedPage: Identifiable {
         let id = UUID()
         let url: URL
+        /// The live outline when the photo was taken.
         let quad: Quad?
+        /// Corners set on the Adjust Borders screen (kept when going back to scan more).
+        var adjusted: Quad?
     }
 
     @State private var camera = CameraController.shared
@@ -22,6 +26,7 @@ struct ScannerView: View {
     @State private var flashOpacity = 0.0
     @State private var confirmDiscard = false
     @State private var captureError: String?
+    @State private var reviewing = false
 
     var body: some View {
         ZStack {
@@ -53,6 +58,14 @@ struct ScannerView: View {
                             isPresented: $confirmDiscard, titleVisibility: .visible) {
             Button("Discard", role: .destructive) { discardAndClose() }
             Button("Keep Scanning", role: .cancel) {}
+        }
+        .fullScreenCover(isPresented: $reviewing) {
+            ScanReviewView(
+                pages: pages.map { ScanReviewView.Page(url: $0.url, quad: $0.adjusted, hint: $0.quad) },
+                leadingAction: .back,
+                onSave: { quads in finish(with: quads) },
+                onLeave: { quads in backToCamera(keeping: quads) }
+            )
         }
         .alert("Couldn't Capture", isPresented: Binding(get: { captureError != nil }, set: { if !$0 { captureError = nil } })) {
             Button("OK", role: .cancel) {}
@@ -361,10 +374,37 @@ struct ScannerView: View {
     }
 
     private func save() {
+        // A photo still being taken would arrive after the pages were handed on.
+        guard !camera.isCapturing, !pages.isEmpty else { return }
         camera.stop()
-        let newPages = pages.map { DocumentStore.NewPage(fileURL: $0.url, quad: nil, quadHint: $0.quad) }
+        guard reviewBorders else {
+            let newPages = pages.map { DocumentStore.NewPage(fileURL: $0.url, quad: $0.adjusted, quadHint: $0.quad) }
+            pages = []
+            onFinish(newPages)
+            return
+        }
+        reviewing = true
+    }
+
+    /// Adjust Borders → Save: the pages keep exactly the corners the user saw.
+    private func finish(with quads: [Quad]) {
+        // One quad per reviewed page; a page that somehow arrived later is auto-detected, not dropped.
+        let newPages = pages.enumerated().map { i, page in
+            DocumentStore.NewPage(fileURL: page.url, quad: quads.indices.contains(i) ? quads[i] : nil, quadHint: page.quad)
+        }
         pages = []
+        reviewing = false
         onFinish(newPages)
+    }
+
+    /// Adjust Borders → Back: keep scanning; the last page in view isn't captured again.
+    private func backToCamera(keeping quads: [Quad?]) {
+        for (i, quad) in quads.enumerated() where pages.indices.contains(i) && quad != nil {
+            pages[i].adjusted = quad
+        }
+        reviewing = false
+        camera.holdOffAutoCapture(lastCaptured: pages.last?.quad)
+        Task { await camera.start() }
     }
 
     private func discardAndClose() {

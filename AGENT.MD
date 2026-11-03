@@ -116,6 +116,7 @@ Core (v0.1):
 - [x] Scan with VisionKit camera: live auto border detection, auto-capture, multi-page
 - [x] Import from Photos with automatic border detection (Vision)
 - [x] Manual crop: draggable corners, magnifier loupe, auto-detect / full-page buttons
+- [x] Adjust Borders step after scanning / importing (check and drag every page's corners before saving)
 - [x] Perspective correction
 - [x] Filters: Original, Magic Color, Grayscale, B&W, Lighten
 - [x] Rotate pages, delete pages, reorder pages, add pages to existing document
@@ -243,6 +244,23 @@ Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if ser
     Grayscale bright rims are gone (darken-only).
   - The owner confirmed on 2026-11-02, on the iPhone 13 Pro: "Looks sharp now".
   - Regression tests in `ImageProcessorTests` use a synthetic blurred page: no bright rims plus crisper edges for Grayscale, white paper plus dark ink for Magic Color, and the JPEG/size floors. Suites: 173 unit, 14 UI.
+
+- 2026-11-02: **Adjust Borders**, plus borders that sit on the paper edge. The owner asked for CamScanner-style manual border adjusting, and said the auto border "misses a few millimetres" of the paper.
+  - **Border accuracy** (`EdgeRefiner`):
+    - Vision's outline is coarse and sat about 3–5 mm inside the paper. On the owner's homework photo the corners moved 41–71 px at 3024×4032, and the outline is now on the edge.
+    - How it works: each side searches ±3 % along its normal for the clearest paper/background brightness step, taking the step nearest Vision's line, so it ignores a printed frame or text inside and a second sheet or the table outside. It then fits a robust line and re-intersects the corners.
+    - It runs on photos (a 1600 px gray copy) and on live frames (720 px).
+    - Inset: 0.1 % when all 4 sides were refined, otherwise the old 0.4 %.
+  - **Adjust Borders screen** (`ScanReviewView`, using `CropEditor` extracted from `CropView`):
+    - When: after Save in DocSnap Camera, and after importing photos.
+    - What it shows: every page with its detected corners, plus drag handles, the loupe, Auto Detect / Full Page, and a page strip.
+    - Back returns to the camera and keeps the adjustments. `CameraController.holdOffAutoCapture` keeps the page still in view from being captured again.
+    - Settings → Scanning → **Adjust Borders** (default on) turns the step off.
+  - **Agents:**
+    - The bug hunter found 10 issues; all are fixed with tests where testable. The worst: after Back, the first empty warm-up frame re-armed auto-capture and the same page was captured twice. Others: per-side inset, a stacked-sheet edge, the picker dismiss race, cancellation, double Save, stale hold-off, the footer, frame sampling.
+    - The tester added `-uiTestingReviewImport` (DEBUG) and 5 UI tests (review strip, corner drag + Save, Cancel, Full Page, the toggle) plus 2 unit tests.
+  - **Found a test-fixture bug:** `DeviceEdgeCaseTests.cameraStyle` rotated clockwise, so its "upright" photo was upside down. The old 0.02 tolerance hid it. It is fixed and the tolerance is tightened to 0.005.
+  - Suites: 188 unit and 19 UI, all green. SwiftLint is clean.
 
 Next up:
 1. Owner tries the hold-steady camera and the Answer button on the iPhone and reports back.

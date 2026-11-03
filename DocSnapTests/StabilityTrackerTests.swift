@@ -449,6 +449,27 @@ final class StabilityTrackerTests: XCTestCase {
         XCTAssertEqual(tracker.update(quad: page(), deviceStill: true, at: 1.5), .holding(progress: 0))
     }
 
+    // MARK: holdOff (back from Adjust Borders)
+
+    /// Bug-hunter finding: after a camera restart the tracker had never seen the page, so the first
+    /// warm-up frame without a page counted as "page taken away" and the same sheet was captured again.
+    func testHoldOffAfterARestartSurvivesWarmUpFramesWithoutAPage() {
+        var tracker = StabilityTracker(holdDuration: 1.5)
+        tracker.holdOff(lastCaptured: page(), at: 0)
+        XCTAssertEqual(tracker.update(quad: nil, deviceStill: true, at: 0.1), .captured)
+        let phases = feed(&tracker, page(), from: 0.2, to: 8)
+        XCTAssertFalse(phases.contains(.ready), "the page still in view must not be captured again")
+        XCTAssertFalse(tracker.isRearmed)
+    }
+
+    func testHoldOffStillRearmsWhenThePageIsTakenAway() {
+        var tracker = StabilityTracker(holdDuration: 1.5)
+        tracker.holdOff(lastCaptured: page(), at: 0)
+        feed(&tracker, nil, from: 0.1, to: 1.2)
+        XCTAssertTrue(tracker.isRearmed)
+        XCTAssertNotNil(timeUntilReady(&tracker, { _ in self.page(dx: 0.02) }, from: 2))
+    }
+
     // MARK: rearm() (the user removed the last page)
 
     func testRearmWhileCapturedWaitsForTheCooldownThenAFullHold() {

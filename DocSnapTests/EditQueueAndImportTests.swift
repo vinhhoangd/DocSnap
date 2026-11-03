@@ -267,4 +267,40 @@ final class EditQueueAndImportTests: XCTestCase {
         XCTAssertEqual(PDFDocument(url: url)?.pageCount, 3)
         XCTAssertLessThan(pdfSize, 2 * jpegSum, "PDF \(pdfSize) B vs JPEG sum \(jpegSum) B: images are being re-encoded")
     }
+    // MARK: - Adjust Borders import hook
+
+    /// The UI-test import must hand the review screen real, detectable photos, and saving them with
+    /// the quads the review screen returns must keep exactly those corners and delete the temp copies.
+    func testReviewImportPhotosAreDetectableAndSaveWithReviewedQuads() async throws {
+        let urls = SampleData.writeReviewImportPhotos()
+        defer { for url in urls { try? FileManager.default.removeItem(at: url) } }
+        XCTAssertEqual(urls.count, 2)
+        for url in urls {
+            let image = try XCTUnwrap(ImageProcessor.loadCGImage(at: url, maxPixelSize: ScanReviewView.workingSize))
+            let quad = try XCTUnwrap(DocumentDetector.detectSync(in: image), "No page found in \(url.lastPathComponent)")
+            XCTAssertTrue(quad.isValid)
+            XCTAssertFalse(quad.isFull, "Detection should find the paper, not the whole photo")
+        }
+
+        let adjusted = Quad(topLeft: CGPoint(x: 0.2, y: 0.15), topRight: CGPoint(x: 0.85, y: 0.15),
+                            bottomRight: CGPoint(x: 0.8, y: 0.85), bottomLeft: CGPoint(x: 0.15, y: 0.85))
+        let quads = [adjusted, Quad.full]
+        let pages = zip(urls, quads).map { DocumentStore.NewPage(fileURL: $0, quad: $1) }
+        let store = DocumentStore(rootURL: root)
+        let doc = try await store.createDocument(pages: pages, filter: .original)
+        XCTAssertEqual(doc.pages.count, 2)
+        for (page, quad) in zip(doc.pages, quads) {
+            for (a, b) in zip(page.quad.points, quad.points) {
+                XCTAssertEqual(a.x, b.x, accuracy: 0.0001)
+                XCTAssertEqual(a.y, b.y, accuracy: 0.0001)
+            }
+        }
+        for url in urls { XCTAssertFalse(FileManager.default.fileExists(atPath: url.path), "Temp copy should be removed") }
+    }
+
+    func testReviewImportRunsOnlyOnceAndNotWithoutItsArgument() {
+        // Unit tests don't launch with -uiTestingReviewImport, so the hook must stay idle.
+        XCTAssertFalse(SampleData.takeReviewImport())
+        XCTAssertFalse(SampleData.takeReviewImport())
+    }
 }

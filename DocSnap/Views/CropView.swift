@@ -1,11 +1,10 @@
 import CoreImage
 import SwiftUI
 
-/// Drag the four corners (or the edges) to fit the paper. A loupe magnifies the corner being dragged.
+/// Re-crops a saved page: the corner editor plus Auto Detect / Full Page.
 ///
 /// The crop is stored in the *original* photo's coordinates (it's applied before rotation), but the
 /// photo is shown turned the way the page is, so a rotated page doesn't appear sideways here.
-/// Points are mapped between the two spaces with `rotatedNormalized(quarterTurns:)`.
 struct CropView: View {
     @Environment(DocumentStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -20,45 +19,25 @@ struct CropView: View {
     @State private var image: UIImage?
     /// Crop corners in original-image space.
     @State private var quad: Quad = .full
-    @State private var dragStart: Quad?
-    @State private var activeHandle: Handle?
     @State private var detecting = false
     @State private var notFound = false
 
-    private let handleSize: CGFloat = 22
-    private let loupeSize: CGFloat = 120
-    private let loupeZoom: CGFloat = 2.5
-
-    enum Handle: Equatable {
-        case corner(Int)
-        case edge(Int) // edge i runs from corner i to corner i+1
-    }
-
     var body: some View {
         NavigationStack {
-            GeometryReader { proxy in
-                let area = proxy.size
-                ZStack(alignment: .topLeading) {
-                    Color.black
-                    if let image {
-                        let rect = fittedRect(image.size, in: area)
-                        Image(uiImage: image)
-                            .resizable()
-                            .frame(width: rect.width, height: rect.height)
-                            .position(x: rect.midX, y: rect.midY)
-                        overlay(in: rect)
-                        handles(in: rect)
-                        if let activeHandle {
-                            loupe(image: image, rect: rect, area: area, handle: activeHandle)
-                        }
-                    } else {
-                        ProgressView().tint(.white)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
+            Group {
+                if let image {
+                    CropEditor(image: image, rotation: page.rotation, quad: $quad)
+                } else {
+                    ProgressView().tint(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black)
                 }
             }
             .ignoresSafeArea(edges: .horizontal)
-            .safeAreaInset(edge: .bottom) { bottomBar }
+            .safeAreaInset(edge: .bottom) {
+                CropActionsBar(detecting: detecting, canDetect: original != nil,
+                               onAutoDetect: autoDetect, onFullPage: { withAnimation(.snappy) { quad = .full } })
+            }
             .navigationTitle("Crop")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.visible, for: .navigationBar)
@@ -95,20 +74,40 @@ struct CropView: View {
         }
     }
 
-    // A plain bar instead of a `.bottomBar` toolbar, which UIKit warns about inside a full-screen cover.
-    private var bottomBar: some View {
+    private func autoDetect() {
+        guard let cg = original else { return }
+        detecting = true
+        Task {
+            let found = await DocumentDetector.detect(in: cg)
+            detecting = false
+            if let found {
+                Haptics.success()
+                withAnimation(.snappy) { quad = found }
+            } else {
+                Haptics.warning()
+                notFound = true
+            }
+        }
+    }
+}
+
+/// Auto Detect and Full Page buttons under a corner editor.
+/// A plain bar instead of a `.bottomBar` toolbar, which UIKit warns about inside a full-screen cover.
+struct CropActionsBar: View {
+    let detecting: Bool
+    let canDetect: Bool
+    let onAutoDetect: () -> Void
+    let onFullPage: () -> Void
+
+    var body: some View {
         HStack {
-            Button {
-                autoDetect()
-            } label: {
+            Button(action: onAutoDetect) {
                 Label("Auto Detect", systemImage: "viewfinder")
             }
-            .disabled(detecting || original == nil)
+            .disabled(detecting || !canDetect)
             .accessibilityIdentifier("cropAutoButton")
             Spacer()
-            Button {
-                withAnimation(.snappy) { quad = .full }
-            } label: {
+            Button(action: onFullPage) {
                 Label("Full Page", systemImage: "arrow.up.left.and.arrow.down.right")
             }
             .accessibilityIdentifier("cropFullButton")
@@ -117,14 +116,56 @@ struct CropView: View {
         .padding(.vertical, 12)
         .background(.bar)
     }
+}
+
+/// Drag the four corners (or the edges) to fit the paper. A loupe magnifies the corner being dragged.
+///
+/// `image` is the photo turned by `rotation` quarter turns (what the user sees); `quad` is in the
+/// unrotated photo's coordinates. Points are mapped between the two with `rotatedNormalized(quarterTurns:)`.
+struct CropEditor: View {
+    let image: UIImage
+    var rotation: Int = 0
+    @Binding var quad: Quad
+
+    @State private var dragStart: Quad?
+    @State private var activeHandle: Handle?
+
+    private let handleSize: CGFloat = 22
+    private let loupeSize: CGFloat = 120
+    private let loupeZoom: CGFloat = 2.5
+
+    enum Handle: Equatable {
+        case corner(Int)
+        case edge(Int) // edge i runs from corner i to corner i+1
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            let area = proxy.size
+            let rect = fittedRect(image.size, in: area)
+            ZStack(alignment: .topLeading) {
+                Color.black
+                Image(uiImage: image)
+                    .resizable()
+                    .frame(width: rect.width, height: rect.height)
+                    .position(x: rect.midX, y: rect.midY)
+                    .accessibilityHidden(true)
+                overlay(in: rect)
+                handles(in: rect)
+                if let activeHandle {
+                    loupe(rect: rect, area: area, handle: activeHandle)
+                }
+            }
+        }
+    }
 
     // MARK: - Coordinate spaces
 
     /// Original-image point → on-screen (rotated) point.
-    private func toDisplay(_ p: CGPoint) -> CGPoint { p.rotatedNormalized(quarterTurns: page.rotation) }
+    private func toDisplay(_ p: CGPoint) -> CGPoint { p.rotatedNormalized(quarterTurns: rotation) }
 
     /// On-screen (rotated) point → original-image point.
-    private func toOriginal(_ p: CGPoint) -> CGPoint { p.rotatedNormalized(quarterTurns: 4 - page.rotation) }
+    private func toOriginal(_ p: CGPoint) -> CGPoint { p.rotatedNormalized(quarterTurns: 4 - rotation) }
 
     private var displayPoints: [CGPoint] { quad.points.map(toDisplay) }
 
@@ -164,6 +205,7 @@ struct CropView: View {
                     .contentShape(Rectangle())
                     .position(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
                     .gesture(drag(.edge(i), rect: rect))
+                    .accessibilityIdentifier("cropEdge\(i)")
             }
             ForEach(0..<4, id: \.self) { i in
                 Circle()
@@ -182,7 +224,7 @@ struct CropView: View {
         }
     }
 
-    private func loupe(image: UIImage, rect: CGRect, area: CGSize, handle: Handle) -> some View {
+    private func loupe(rect: CGRect, area: CGSize, handle: Handle) -> some View {
         let pts = displayPoints
         let focus: CGPoint
         switch handle {
@@ -250,22 +292,6 @@ struct CropView: View {
                 dragStart = nil
                 activeHandle = nil
             }
-    }
-
-    private func autoDetect() {
-        guard let cg = original else { return }
-        detecting = true
-        Task {
-            let found = await DocumentDetector.detect(in: cg)
-            detecting = false
-            if let found {
-                Haptics.success()
-                withAnimation(.snappy) { quad = found }
-            } else {
-                Haptics.warning()
-                notFound = true
-            }
-        }
     }
 
     // MARK: - Geometry

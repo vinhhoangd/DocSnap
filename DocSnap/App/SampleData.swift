@@ -6,6 +6,37 @@ import UIKit
 @MainActor
 enum SampleData {
     static let launchArgument = "-uiTestingSampleData"
+    /// Starts from an empty temporary store and imports two synthetic photos at launch, as if they
+    /// were picked in Photos (UI tests can't drive the system picker), so the Adjust Borders flow runs.
+    static let reviewImportArgument = "-uiTestingReviewImport"
+
+    /// Either UI-test mode: keep the real library untouched.
+    static var usesTemporaryStore: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains(launchArgument) || arguments.contains(reviewImportArgument)
+    }
+
+    /// Several views attach the capture modifier; only the first one to ask runs the import.
+    private static var reviewImportPending = ProcessInfo.processInfo.arguments.contains(reviewImportArgument)
+
+    /// `true` once, if the app was launched with `reviewImportArgument`.
+    static func takeReviewImport() -> Bool {
+        defer { reviewImportPending = false }
+        return reviewImportPending
+    }
+
+    /// Writes the photos of a review import as encoded files in the capture folder, like a Photos import.
+    nonisolated static func writeReviewImportPhotos() -> [URL] {
+        let folder = DocumentStore.captureDirectory
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let pages = [["IMPORTED PAGE ONE", "Adjust Borders test"], ["IMPORTED PAGE TWO", "Second photo"]]
+        return pages.compactMap { lines in
+            let url = folder.appendingPathComponent(UUID().uuidString)
+            guard let data = photoOfPaper(lines: lines).jpegData(compressionQuality: 0.9),
+                  (try? data.write(to: url)) != nil else { return nil }
+            return url
+        }
+    }
 
     static func makeStore() -> DocumentStore {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("UITestStore-\(UUID().uuidString)")

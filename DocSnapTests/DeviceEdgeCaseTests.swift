@@ -54,8 +54,9 @@ final class DeviceEdgeCaseTests: XCTestCase {
                                           space: CGColorSpaceCreateDeviceRGB(),
                                           bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue))
         // Store the upright picture rotated 90° counter-clockwise; `.right` undoes that on display.
-        ctx.translateBy(x: 0, y: CGFloat(w))
-        ctx.rotate(by: -.pi / 2)
+        // (Core Graphics is y-up, so a positive angle turns counter-clockwise.)
+        ctx.translateBy(x: CGFloat(h), y: 0)
+        ctx.rotate(by: .pi / 2)
         ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
         let stored = try XCTUnwrap(ctx.makeImage())
         XCTAssertEqual(stored.width, h)
@@ -156,14 +157,14 @@ final class DeviceEdgeCaseTests: XCTestCase {
         // Corners of the synthetic paper in upright coordinates: (0.16,0.12) (0.86,0.15) (0.82,0.88) (0.12,0.85).
         let quad = page.quad
         XCTAssertFalse(quad.isFull, "Expected a detected border on a rotated camera photo")
-        XCTAssertEqual(quad.topLeft.x, 0.16, accuracy: 0.02)
-        XCTAssertEqual(quad.topLeft.y, 0.12, accuracy: 0.02)
-        XCTAssertEqual(quad.topRight.x, 0.86, accuracy: 0.02)
-        XCTAssertEqual(quad.topRight.y, 0.15, accuracy: 0.02)
-        XCTAssertEqual(quad.bottomRight.x, 0.82, accuracy: 0.02)
-        XCTAssertEqual(quad.bottomRight.y, 0.88, accuracy: 0.02)
-        XCTAssertEqual(quad.bottomLeft.x, 0.12, accuracy: 0.02)
-        XCTAssertEqual(quad.bottomLeft.y, 0.85, accuracy: 0.02)
+        XCTAssertEqual(quad.topLeft.x, 0.16, accuracy: 0.005)
+        XCTAssertEqual(quad.topLeft.y, 0.12, accuracy: 0.005)
+        XCTAssertEqual(quad.topRight.x, 0.86, accuracy: 0.005)
+        XCTAssertEqual(quad.topRight.y, 0.15, accuracy: 0.005)
+        XCTAssertEqual(quad.bottomRight.x, 0.82, accuracy: 0.005)
+        XCTAssertEqual(quad.bottomRight.y, 0.88, accuracy: 0.005)
+        XCTAssertEqual(quad.bottomLeft.x, 0.12, accuracy: 0.005)
+        XCTAssertEqual(quad.bottomLeft.y, 0.85, accuracy: 0.005)
 
         // The flattened page is portrait as well.
         let processed = try pixelSize(at: store.processedURL(doc.id, page.id))

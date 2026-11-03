@@ -12,12 +12,30 @@ enum DocumentDetector {
     }
 
     static func detectSync(in image: CGImage) -> Quad? {
-        detect(using: VNImageRequestHandler(cgImage: image, options: [:]))
+        guard let rough = detect(using: VNImageRequestHandler(cgImage: image, options: [:])) else { return nil }
+        return refined(rough, GrayImage(image, maxSide: 1600))
     }
 
-    /// For live camera frames. `orientation` describes how the buffer is rotated relative to upright.
+    /// For live camera frames. `orientation` describes how the buffer is rotated relative to upright
+    /// (edge refinement runs only for upright frames).
     static func detectSync(in pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation = .up) -> Quad? {
-        detect(using: VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation, options: [:]))
+        guard let rough = detect(using: VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation, options: [:])) else {
+            return nil
+        }
+        return refined(rough, orientation == .up ? GrayImage(pixelBuffer, maxSide: 720) : nil)
+    }
+
+    /// A refined outline sits on the middle of the paper's edge; this tiny pull inward (about 4 px on
+    /// a 12 MP photo, well under a millimetre) keeps the half-lit edge pixels out of the scan.
+    static let edgeInset: CGFloat = 0.001
+    /// Vision's own outline can sit a pixel or two outside the paper, so an outline that couldn't be
+    /// fully refined keeps the older, larger safety margin.
+    static let roughInset: CGFloat = 0.004
+
+    private static func refined(_ rough: Quad, _ gray: GrayImage?) -> Quad {
+        guard let gray else { return rough.inset(by: roughInset) }
+        let result = EdgeRefiner.refine(rough, in: gray)
+        return result.quad.inset(by: result.refinedSides == 4 ? edgeInset : roughInset)
     }
 
     /// Runs both detectors and keeps the largest plausible page. The ML segmenter can return
@@ -44,7 +62,7 @@ enum DocumentDetector {
         }
         guard let best = candidates.filter({ !$0.isNearlyFullFrame && !$0.isMostlyOnFrameEdge })
             .max(by: { $0.area < $1.area }) else { return nil }
-        return best.inset(by: 0.004)
+        return best
     }
 
     private static func quad(from obs: VNRectangleObservation) -> Quad? {

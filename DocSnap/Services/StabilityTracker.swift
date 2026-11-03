@@ -165,6 +165,14 @@ struct StabilityTracker {
         phase = .captured
     }
 
+    /// Back on the camera with the last page probably still in view (e.g. after Adjust Borders):
+    /// behave as if `quad` was just captured and seen, so a warm-up frame without a page doesn't
+    /// count as the page being taken away.
+    mutating func holdOff(lastCaptured quad: Quad?, at time: TimeInterval) {
+        didCapture(quad: quad, at: time)
+        lastSeen = time
+    }
+
     /// The user removed the last page (e.g. blurry): allow scanning the same sheet again
     /// without moving, still respecting the cooldown.
     mutating func rearm() {

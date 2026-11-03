@@ -7,7 +7,7 @@ struct DocSnapApp: App {
 
     init() {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains(SampleData.launchArgument) {
+        if SampleData.usesTemporaryStore {
             _store = State(initialValue: SampleData.makeStore())
             return
         }

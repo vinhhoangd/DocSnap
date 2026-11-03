@@ -225,6 +225,35 @@ final class DocSnapUITests: XCTestCase {
         XCTAssertTrue(documentRow.waitForExistence(timeout: 5), "Clearing the query should bring the document back")
     }
 
+    func testAdjustBordersToggleSwitches() {
+        XCTAssertTrue(documentRow.waitForExistence(timeout: 20))
+        app.buttons["settingsButton"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        let toggle = app.switches["reviewBordersToggle"].firstMatch
+        for _ in 0..<4 where !toggle.waitForExistence(timeout: 1) {
+            app.collectionViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "Adjust Borders toggle missing:\n\(app.debugDescription)")
+        let original = toggle.value as? String
+        XCTAssertTrue(["0", "1"].contains(original ?? ""), "Unexpected toggle value \(String(describing: original))")
+
+        // Tap the switch itself: tapping the middle of a Form row doesn't flip it.
+        flip(toggle)
+        XCTAssertNotEqual(toggle.value as? String, original, "Tapping should flip Adjust Borders")
+        flip(toggle)
+        XCTAssertEqual(toggle.value as? String, original, "Second tap should restore the setting")
+
+        app.navigationBars["Settings"].buttons["Done"].tap()
+        waitForDisappearance(app.navigationBars["Settings"])
+    }
+
+    private func flip(_ toggle: XCUIElement) {
+        let before = toggle.value as? String
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        let changed = expectation(for: NSPredicate(format: "value != %@", before ?? ""), evaluatedWith: toggle)
+        _ = XCTWaiter.wait(for: [changed], timeout: 3)
+    }
+
     // MARK: - Answer and appearance
 
     func testAnswerWithoutServerShowsNotSetUp() {
@@ -316,5 +345,130 @@ final class DocSnapUITests: XCTestCase {
         XCTAssertLessThan(handle.frame.midY, window.midY)
         app.buttons["cropDoneButton"].tap()
         XCTAssertTrue(rotate.waitForExistence(timeout: 10))
+    }
+}
+
+/// The Adjust Borders screen after a photo import. `-uiTestingReviewImport` starts from an empty store
+/// and imports two synthetic photos at launch through the real import path (the system Photos picker
+/// can't be driven reliably from UI tests).
+final class ScanReviewUITests: XCTestCase {
+    private var app: XCUIApplication!
+
+    override func setUp() {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        // Force the setting on (argument domain), so a toggle test that stopped halfway can't turn this off.
+        app.launchArguments = ["-uiTestingReviewImport", "-reviewBorders", "YES"]
+        app.launch()
+    }
+
+    // MARK: - Helpers
+
+    private var saveButton: XCUIElement { app.buttons["reviewSaveButton"] }
+    private func handle(_ i: Int) -> XCUIElement { app.descendants(matching: .any)["cropHandle\(i)"].firstMatch }
+
+    /// Waits for the review screen on page 1, with its corners detected and Save usable.
+    private func waitForReview(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.navigationBars["Page 1 of 2"].waitForExistence(timeout: 20),
+                      "Adjust Borders never appeared (is the setting off?):\n\(app.debugDescription)", file: file, line: line)
+        XCTAssertTrue(handle(0).waitForExistence(timeout: 15), "Corner handles missing", file: file, line: line)
+        waitUntilEnabled(saveButton, file: file, line: line)
+    }
+
+    private func waitUntilEnabled(_ element: XCUIElement, timeout: TimeInterval = 20,
+                                  file: StaticString = #filePath, line: UInt = #line) {
+        let predicate = NSPredicate(format: "exists == true AND enabled == true")
+        let result = XCTWaiter.wait(for: [expectation(for: predicate, evaluatedWith: element)], timeout: timeout)
+        XCTAssertEqual(result, .completed, "\(element) never became enabled", file: file, line: line)
+    }
+
+    private func waitForDisappearance(_ element: XCUIElement, timeout: TimeInterval = 10,
+                                      file: StaticString = #filePath, line: UInt = #line) {
+        let result = XCTWaiter.wait(for: [expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: element)],
+                                    timeout: timeout)
+        XCTAssertEqual(result, .completed, "\(element) is still on screen", file: file, line: line)
+    }
+
+    private func stripButton(_ number: Int) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label == %@", "Page \(number)")).firstMatch
+    }
+
+    /// After Save the library opens the new document; it must hold both imported pages.
+    private func assertDocumentWithTwoPages(file: StaticString = #filePath, line: UInt = #line) {
+        waitForDisappearance(app.navigationBars["Page 1 of 2"], file: file, line: line)
+        XCTAssertTrue(app.buttons["pageCell"].firstMatch.waitForExistence(timeout: 30), "The new document didn't open",
+                      file: file, line: line)
+        XCTAssertEqual(app.buttons.matching(identifier: "pageCell").count, 2, file: file, line: line)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let row = app.buttons["documentRow"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5), file: file, line: line)
+        XCTAssertEqual(app.buttons.matching(identifier: "documentRow").count, 1, "Save should create exactly one document",
+                       file: file, line: line)
+        let twoPages = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "2 pages")).firstMatch
+        XCTAssertTrue(twoPages.waitForExistence(timeout: 5), "Library should show the document as 2 pages", file: file, line: line)
+    }
+
+    // MARK: - Tests
+
+    func testReviewShowsBothPagesAndStripSwitches() {
+        waitForReview()
+        XCTAssertTrue(app.descendants(matching: .any)["reviewStrip"].firstMatch.exists, "Page strip missing for 2 pages")
+        XCTAssertTrue(app.buttons["cropAutoButton"].exists)
+        XCTAssertTrue(app.buttons["cropFullButton"].exists)
+        XCTAssertTrue(app.buttons["reviewBackButton"].exists)
+        XCTAssertEqual(app.buttons["reviewBackButton"].label, "Cancel", "An import offers Cancel, not Back")
+
+        let page2 = stripButton(2)
+        XCTAssertTrue(page2.waitForExistence(timeout: 5), "Strip has no Page 2 button:\n\(app.debugDescription)")
+        page2.tap()
+        XCTAssertTrue(app.navigationBars["Page 2 of 2"].waitForExistence(timeout: 5))
+        XCTAssertTrue(handle(0).waitForExistence(timeout: 15), "Page 2 never showed its corners")
+
+        stripButton(1).tap()
+        XCTAssertTrue(app.navigationBars["Page 1 of 2"].waitForExistence(timeout: 5))
+    }
+
+    func testDragCornerThenSaveCreatesTwoPageDocument() {
+        waitForReview()
+        let corner = handle(0)
+        let before = corner.frame
+        // Detected top-left corner → drag it 50 pt in toward the middle of the page.
+        let start = corner.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.3, thenDragTo: start.withOffset(CGVector(dx: 50, dy: 50)))
+        let after = corner.frame
+        XCTAssertGreaterThan(after.midX - before.midX, 25, "Corner didn't follow the drag: \(before) → \(after)")
+        XCTAssertGreaterThan(after.midY - before.midY, 25, "Corner didn't follow the drag: \(before) → \(after)")
+        XCTAssertFalse(app.staticTexts["Corners crossed — drag them back around the page"].exists)
+
+        waitUntilEnabled(saveButton)
+        saveButton.tap()
+        assertDocumentWithTwoPages()
+    }
+
+    func testCancelCreatesNoDocument() {
+        waitForReview()
+        app.buttons["reviewBackButton"].tap()
+        waitForDisappearance(app.navigationBars["Page 1 of 2"])
+        XCTAssertTrue(app.buttons["emptyImportButton"].waitForExistence(timeout: 5), "Library should be empty after Cancel")
+        // Give a stray save time to land before checking nothing was created.
+        XCTAssertFalse(app.buttons["documentRow"].firstMatch.waitForExistence(timeout: 3), "Cancel must not create a document")
+        XCTAssertFalse(app.buttons["pageCell"].exists)
+    }
+
+    func testFullPageThenSave() {
+        waitForReview()
+        let corner = handle(0)
+        let detected = corner.frame
+        app.buttons["cropFullButton"].tap()
+        // The synthetic paper starts ~16% in from the left and ~12% down: Full Page moves the corner up-left.
+        let moved = expectation(for: NSPredicate { _, _ in
+            corner.frame.midX < detected.midX - 10 && corner.frame.midY < detected.midY - 10
+        }, evaluatedWith: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [moved], timeout: 5), .completed,
+                       "Full Page didn't move the corner out: \(detected) → \(corner.frame)")
+
+        waitUntilEnabled(saveButton)
+        saveButton.tap()
+        assertDocumentWithTwoPages()
     }
 }

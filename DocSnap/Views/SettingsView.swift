@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage(Settings.appearanceKey) private var appearance: AppearanceMode = .system
     @AppStorage(Settings.scannerKey) private var scanner: ScannerKind = .docsnap
     @AppStorage(Settings.autoCaptureDelayKey) private var autoCapture: AutoCaptureDelay = .oneAndHalf
+    @AppStorage(Settings.reviewBordersKey) private var reviewBorders = true
     @AppStorage(Settings.answerModelKey) private var answerModel: AnswerModel = .opus
 
     enum ServerStatus { case unknown, checking, ok, failed, notConfigured }
@@ -64,6 +65,10 @@ struct SettingsView: View {
                         }
                         .accessibilityIdentifier("autoCapturePicker")
                     }
+                    Toggle(isOn: $reviewBorders) {
+                        SettingLabel("Adjust Borders", systemImage: "crop", color: .blue)
+                    }
+                    .accessibilityIdentifier("reviewBordersToggle")
                     Picker(selection: $defaultFilter) {
                         ForEach(ScanFilter.allCases) { Text($0.displayName).tag($0) }
                     } label: {
@@ -72,10 +77,13 @@ struct SettingsView: View {
                 } header: {
                     Text("Scanning")
                 } footer: {
-                    Text(scanner == .docsnap
-                         ? "DocSnap Camera waits until the page is held steady before it captures, so you have time to line it up. "
-                            + "The filter applies to new scans and imports."
-                         : "Apple Scanner captures as soon as it finds the page. The filter applies to new scans and imports.")
+                    Text((scanner == .docsnap
+                          ? "DocSnap Camera waits until the page is held steady before it captures, so you have time to line it up. "
+                          : "Apple Scanner captures as soon as it finds the page. ")
+                         + (scanner == .docsnap
+                            ? "Adjust Borders lets you check and drag each page's corners before saving. "
+                            : "Adjust Borders lets you check imported photos' corners before saving. ")
+                         + "The filter applies to new scans and imports.")
                 }
 
                 Section {
