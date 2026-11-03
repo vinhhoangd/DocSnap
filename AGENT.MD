@@ -261,6 +261,7 @@ Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if ser
     - The tester added `-uiTestingReviewImport` (DEBUG) and 5 UI tests (review strip, corner drag + Save, Cancel, Full Page, the toggle) plus 2 unit tests.
   - **Found a test-fixture bug:** `DeviceEdgeCaseTests.cameraStyle` rotated clockwise, so its "upright" photo was upside down. The old 0.02 tolerance hid it. It is fixed and the tolerance is tightened to 0.005.
   - Suites: 188 unit and 19 UI, all green. SwiftLint is clean.
+  - The owner confirmed on 2026-11-03, on the iPhone 13 Pro: "Borders fit well".
 
 Next up:
 1. Owner tries the hold-steady camera and the Answer button on the iPhone and reports back.
