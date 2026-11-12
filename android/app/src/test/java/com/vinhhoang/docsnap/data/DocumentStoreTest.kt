@@ -427,6 +427,11 @@ class DocumentStoreTest {
         assertEquals("Scan 2026-11-12 14.30", ScanDocument.defaultTitle(cal.timeInMillis))
     }
 
+    @Test fun defaultTitleUsesTheLocalizedPrefix() {
+        val cal = java.util.Calendar.getInstance().apply { set(2026, 10, 12, 9, 5, 0) }
+        assertEquals("Bản quét 2026-11-12 09.05", ScanDocument.defaultTitle(cal.timeInMillis, prefix = "Bản quét"))
+    }
+
     @Test fun editedNormalizesRotation() {
         val page = ScanPage(rotation = 3)
         assertEquals(0, page.edited(rotation = 4).rotation)

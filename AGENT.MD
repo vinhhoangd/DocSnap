@@ -109,6 +109,24 @@ For every feature milestone:
 4. **Fixer agent** (or the builder) fixes each confirmed bug and adds a regression test.
 5. Re-run tests; only a green build gets committed and pushed.
 
+### Android (`android/`)
+
+```bash
+scripts/android.sh testDebugUnitTest assembleDebug     # JVM tests + debug APK
+scripts/android.sh connectedDebugAndroidTest           # Compose UI tests (emulator DocSnap_Test must be running)
+scripts/android.sh assembleRelease                     # signed, minified test APK
+```
+
+- **Stack:** Kotlin + Jetpack Compose (Material 3); Gradle 8.13, AGP 8.7.3, Kotlin 2.1; minSdk 26, target 35. Package `com.vinhhoang.docsnap`.
+- **Capture:** Google ML Kit Document Scanner, via Play services. It provides auto edges, auto-capture, border adjusting and gallery import. OCR is ML Kit Latin, which reads Vietnamese.
+- **Data:** the document model matches iOS (JSON per document, `original/` + `processed/` JPEGs) for a later sync. The filters are ported from iOS `ImageProcessor` and run in linear light.
+- **Build output** goes to `~/Library/Caches/DocSnap-android/<hash>`, outside iCloud. Always build through `scripts/android.sh`.
+- **Secrets (git-ignored):**
+  - `android/local.properties` holds `sdk.dir`, `docsnap.apiUrl`, `docsnap.appToken` (copied from `Config/Local.xcconfig`) and `docsnap.keystorePassword`.
+  - `android/keystore/docsnap-release.jks` is the release key. **Back it up**: updates for the father's phone must be signed with the same key.
+- **Languages:** English + Vietnamese (`values-vi`); the app follows the phone's language. Strings are kept per feature in `strings_<feature>.xml`. Filter names are shared in `strings.xml`.
+- **Parallel agents:** use git worktrees (`.claude/worktrees/`, ignored). Never run `scripts/android.sh --stop` while other agents build: it stops every Gradle daemon.
+
 ## 8. Feature checklist (CamScanner parity)
 
 Core (v0.1):
@@ -138,7 +156,7 @@ Later (v0.2+):
 - [ ] PDF password protection, compression quality setting
 - [ ] Batch merge / split documents
 - [ ] iCloud sync
-- [ ] Android app (`android/`)
+- [~] Android app (`android/`): test version 0.1.0 for the owner's father (Samsung, Vietnamese). Auth + database come later (owner, 2026-11-12)
 - [ ] App Store release (needs paid Apple Developer account — ask owner)
 
 ## 9. Status / next steps (update before every stop)
@@ -262,6 +280,37 @@ Deploy routine after every commit: push, then `scripts/deploy_server.sh` (if ser
   - **Found a test-fixture bug:** `DeviceEdgeCaseTests.cameraStyle` rotated clockwise, so its "upright" photo was upside down. The old 0.02 tolerance hid it. It is fixed and the tolerance is tightened to 0.005.
   - Suites: 188 unit and 19 UI, all green. SwiftLint is clean.
   - The owner confirmed on 2026-11-03, on the iPhone 13 Pro: "Borders fit well".
+
+- 2026-11-12: **Android test version** (owner: "make an Android version (Samsung) so my dad in Vietnam can use the app… multiple Claude agents to build, find bugs, fix bugs").
+  - I built the skeleton: model, `DocumentStore`, settings, navigation and stubs.
+  - **3 builder agents in parallel worktrees:**
+    - filters, renderer, PDF (JPEGs embedded byte-for-byte) and OCR
+    - scanner, library, document and page viewer
+    - Claude Answer and Settings
+  - **2 bug hunters** found 20 issues, and **2 fixer agents** fixed them all with tests. Highlights:
+    - viewer OOM and cache thrash
+    - a double back left a blank screen
+    - shared files were deleted under Zalo when the app restarted
+    - fsync + `.bak` for `document.json`
+    - recovery of a document killed mid-save
+    - the scanner launching twice
+    - lost scans on configuration change
+    - a malformed token crash
+  - **Server:** sends `{"type":"ping"}` every 15 s, so long thinking doesn't trip client read timeouts. The iOS client already ignores unknown types. Deployed.
+  - **Tests:**
+    - 271 Android JVM unit tests, 40 server tests, and 33 Compose UI tests, all green.
+    - The UI tests pass with `adb shell am instrument` directly. Gradle's `connectedDebugAndroidTest` died with "Process crashed" on the overloaded emulator.
+  - **Checked on the emulator** (Android 15, Play image):
+    - Google's scanner: gallery import, then auto-crop and straightening of a tilted page.
+    - The document was saved and Magic Color applied.
+    - OCR read the Vietnamese with its accents (exponents became plain digits).
+    - Claude answered 3 Vietnamese math questions correctly in Vietnamese in about 12 s.
+    - The Share PDF chooser opened, and the Vietnamese UI was shown via per-app locale.
+    - New documents are named "Bản quét …" in Vietnamese.
+  - **Release APK:**
+    - Signed and minified, 21 MB (ARM only).
+    - It is copied to `android/release/DocSnap-0.1.0-test.apk` (git-ignored) with `HUONG-DAN-CAI-DAT.txt`, the Vietnamese install steps for the father: Samsung Auto Blocker, unknown sources, Play Protect.
+  - **Not verified on a real Samsung:** the camera scanning feel, speed, memory and Zalo sharing.
 
 Next up:
 1. Owner tries the hold-steady camera and the Answer button on the iPhone and reports back.

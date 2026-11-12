@@ -15,4 +15,6 @@
     <string name="filter_grayscale">Grayscale</string>
     <string name="filter_black_white">B&amp;W</string>
     <string name="filter_lighten">Lighten</string>
+    <!-- New documents are named "<prefix> 2026-11-12 14.30". -->
+    <string name="default_title_prefix">Scan</string>
 </resources>

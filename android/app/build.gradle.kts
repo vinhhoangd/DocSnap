@@ -25,6 +25,8 @@ android {
         versionCode = 1
         versionName = "0.1.0-test"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Phones (Samsung included) are ARM; dropping x86 halves the bundled OCR engine's size.
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         buildConfigField("String", "API_URL", "\"${localValue("docsnap.apiUrl")}\"")
         buildConfigField("String", "APP_TOKEN", "\"${localValue("docsnap.appToken")}\"")
     }

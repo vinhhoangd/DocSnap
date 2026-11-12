@@ -88,8 +88,8 @@ data class ScanDocument(
     val allText: String get() = pages.mapNotNull { it.recognizedText }.joinToString("\n\n")
 
     companion object {
-        /** Default name in the style "Scan 2026-11-12 14.30" (same as iOS). */
-        fun defaultTitle(at: Long = System.currentTimeMillis()): String =
-            "Scan " + SimpleDateFormat("yyyy-MM-dd HH.mm", Locale.US).format(Date(at))
+        /** Default name in the style "Scan 2026-11-12 14.30" (same as iOS); `prefix` is localized by the UI. */
+        fun defaultTitle(at: Long = System.currentTimeMillis(), prefix: String = "Scan"): String =
+            "$prefix " + SimpleDateFormat("yyyy-MM-dd HH.mm", Locale.US).format(Date(at))
     }
 }

@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.vinhhoang.docsnap.DocSnapApp
+import com.vinhhoang.docsnap.R
+import com.vinhhoang.docsnap.model.ScanDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -51,7 +53,11 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             _busy.value = true
             try {
                 val doc = withContext(NonCancellable) {
-                    app.store.createDocument(files, app.settings.defaultFilter.value)
+                    app.store.createDocument(
+                        files,
+                        app.settings.defaultFilter.value,
+                        title = ScanDocument.defaultTitle(prefix = app.getString(R.string.default_title_prefix)),
+                    )
                 }
                 _events.send(LibraryEvent.OpenDocument(doc.id))
             } catch (e: CancellationException) {

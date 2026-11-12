@@ -13,4 +13,6 @@
     <string name="filter_grayscale">Ảnh xám</string>
     <string name="filter_black_white">Đen trắng</string>
     <string name="filter_lighten">Làm sáng</string>
+    <!-- New documents are named "<prefix> 2026-11-12 14.30". -->
+    <string name="default_title_prefix">Bản quét</string>
 </resources>
