@@ -177,8 +177,13 @@ class DocumentStore(
         val original = originalFile(documentId, page.id)
         original.parentFile?.mkdirs()
         processedFile(documentId, page.id).parentFile?.mkdirs()
-        image.copyTo(original, overwrite = true)
-        renderer(original, page, processedFile(documentId, page.id))
+        try {
+            image.copyTo(original, overwrite = true)
+            renderer(original, page, processedFile(documentId, page.id))
+        } catch (e: Throwable) {
+            removePageFiles(documentId, page.id) // don't leave a half-saved page behind
+            throw e
+        }
         return page
     }
 
