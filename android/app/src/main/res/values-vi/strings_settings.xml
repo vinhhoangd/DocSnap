@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Cài đặt</string>
+
+    <string name="settings_section_display">Hiển thị</string>
+    <string name="settings_appearance">Giao diện</string>
+    <string name="settings_appearance_system">Theo điện thoại</string>
+    <string name="settings_appearance_light">Sáng</string>
+    <string name="settings_appearance_dark">Tối</string>
+
+    <string name="settings_section_language">Ngôn ngữ</string>
+    <string name="settings_language">Ngôn ngữ ứng dụng</string>
+    <string name="settings_language_system">Theo điện thoại</string>
+    <string name="settings_language_follows_phone">Theo ngôn ngữ của điện thoại</string>
+
+    <string name="settings_section_scanning">Quét</string>
+    <string name="settings_default_filter">Bộ lọc mặc định</string>
+    <string name="settings_default_filter_footer">Dùng cho các lần quét mới. Sau này vẫn đổi được bộ lọc của từng trang.</string>
+    <string name="settings_filter_original">Ảnh gốc</string>
+    <string name="settings_filter_magic_color">Màu rõ nét</string>
+    <string name="settings_filter_grayscale">Ảnh xám</string>
+    <string name="settings_filter_black_white">Đen trắng</string>
+    <string name="settings_filter_lighten">Làm sáng</string>
+
+    <string name="settings_section_answers">Giải bài bằng AI</string>
+    <string name="settings_model">Mô hình AI</string>
+    <string name="settings_model_opus_detail">Chính xác nhất, hơi chậm</string>
+    <string name="settings_model_sonnet_detail">Nhanh hơn, vẫn rất tốt</string>
+    <string name="settings_model_haiku_detail">Nhanh nhất, hợp câu dễ</string>
+    <string name="settings_server">Máy chủ giải bài</string>
+    <string name="settings_server_checking">Đang kiểm tra…</string>
+    <string name="settings_server_connected">Đã kết nối</string>
+    <string name="settings_server_not_set_up">Chưa thiết lập</string>
+    <string name="settings_server_unreachable">Không kết nối được · bấm để thử lại</string>
+    <string name="settings_answers_footer">Nút Giải bài gửi ảnh của trang tới Claude qua máy chủ DocSnap. Chưa bấm thì chưa gửi gì.</string>
+
+    <string name="settings_section_pdf">PDF</string>
+    <string name="settings_page_size">Khổ giấy</string>
+    <string name="settings_page_size_auto">Tự động (vừa từng trang)</string>
+    <string name="settings_page_size_a4">A4</string>
+    <string name="settings_page_size_letter">Letter (khổ Mỹ)</string>
+
+    <string name="settings_section_about">Thông tin</string>
+    <string name="settings_version">Phiên bản</string>
+    <string name="settings_privacy_footer">Quét, căn viền và nhận dạng chữ đều chạy ngay trên điện thoại. Chỉ khi bấm Giải bài thì trang mới được gửi đi.</string>
+</resources>

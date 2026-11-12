@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Claude Answer feature (ui/answer). Vietnamese copies in values-vi/strings_answer.xml. -->
+    <!-- Short label for the page viewer's Answer button. -->
+    <string name="answer_button">Answer</string>
+    <string name="answer_title">Answer</string>
+    <string name="answer_start">Answer the questions on this page</string>
+    <string name="answer_intro">Claude reads this page and answers each question on it, with the steps.</string>
+    <string name="answer_privacy">Tapping the button sends this page\'s image to Claude (Anthropic\'s AI) through the DocSnap server. Nothing is sent before that.</string>
+    <string name="answer_privacy_ocr">The text recognized on the page goes along too, to help read small writing.</string>
+    <string name="answer_model_will_use">Uses %1$s</string>
+    <string name="answer_model_by">Answered by %1$s</string>
+    <string name="answer_waiting_title">Reading the page…</string>
+    <string name="answer_waiting_body">Claude is working through the questions. This can take up to a minute.</string>
+    <string name="answer_stop">Stop</string>
+    <string name="answer_stopped">Stopped. This answer isn\'t finished, so it wasn\'t saved.</string>
+    <string name="answer_copy">Copy</string>
+    <string name="answer_copied">Copied</string>
+    <string name="answer_share">Share</string>
+    <string name="answer_ask_again">Ask again</string>
+    <string name="answer_retry">Try again</string>
+    <string name="answer_close">Close</string>
+    <string name="answer_disclaimer">AI answers can be wrong. Check the important steps yourself.</string>
+    <string name="answer_truncated">The answer was cut off because it was very long.</string>
+
+    <string name="answer_error_title">Couldn\'t get an answer</string>
+    <string name="answer_error_not_configured">Answers aren\'t set up in this version of the app.</string>
+    <string name="answer_error_server_setup">The DocSnap server isn\'t set up yet.</string>
+    <string name="answer_error_image_unavailable">This page\'s image couldn\'t be read.</string>
+    <string name="answer_error_too_large">This page\'s image is too large to send.</string>
+    <string name="answer_error_unauthorized">The DocSnap server didn\'t accept this app. Install the latest version.</string>
+    <string name="answer_error_rate_limited">Claude is busy right now. Try again in a minute.</string>
+    <string name="answer_error_network">Couldn\'t reach the DocSnap server. Check the internet connection and try again.</string>
+    <string name="answer_error_timeout">Claude took too long to answer. Try again.</string>
+    <string name="answer_error_interrupted">The answer was interrupted before it finished. Try again.</string>
+    <string name="answer_error_bad_request">Claude couldn\'t read this page. Try scanning it again.</string>
+    <string name="answer_error_server">The DocSnap server had a problem. Try again in a moment.</string>
+    <string name="answer_error_refusal">Claude declined to answer this page.</string>
+    <string name="answer_error_empty">Claude didn\'t return an answer. Try again.</string>
+    <string name="answer_error_generic">Something went wrong. Try again.</string>
+</resources>
