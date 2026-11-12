@@ -26,6 +26,9 @@ object ScanErrors {
         else -> ScanErrorKind.PlayServicesMissing
     }
 
+    /** Whether the message should come with an "Update" button that opens Play services in the Play Store. */
+    fun offersPlayServicesUpdate(kind: ScanErrorKind): Boolean = kind == ScanErrorKind.PlayServicesUpdate
+
     /** Maps a failure from getStartScanIntent (MlKitException code, if any, and its message). */
     fun forException(mlKitCode: Int?, message: String?): ScanErrorKind {
         val text = message.orEmpty().lowercase()

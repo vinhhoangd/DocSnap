@@ -80,12 +80,26 @@ fun ConfirmDeleteDialog(title: String, message: String, onConfirm: () -> Unit, o
     )
 }
 
-/** A simple message with an OK button. */
+/**
+ * A simple message with an OK button. With `actionLabel`, a second button does something about it
+ * (e.g. "Update" opens the Play Store) and then closes the dialog.
+ */
 @Composable
-fun MessageDialog(message: String, onDismiss: () -> Unit) {
+fun MessageDialog(message: String, onDismiss: () -> Unit, actionLabel: String? = null, onAction: () -> Unit = {}) {
     AlertDialog(
         onDismissRequest = onDismiss,
         text = { Text(message, style = MaterialTheme.typography.bodyLarge) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) } },
+        confirmButton = {
+            if (actionLabel != null) {
+                TextButton(onClick = { onAction(); onDismiss() }, modifier = Modifier.testTag("messageAction")) { Text(actionLabel) }
+            } else {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) }
+            }
+        },
+        dismissButton = if (actionLabel != null) {
+            { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lib_not_now)) } }
+        } else {
+            null
+        },
     )
 }

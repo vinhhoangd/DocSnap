@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode: the window behind the first frame matches the dark theme background (no white flash). -->
+    <color name="window_background">#0E0F12</color>
+
+    <style name="Theme.DocSnap" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+</resources>

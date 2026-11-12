@@ -13,7 +13,7 @@
     <string name="answer_stop">Dừng</string>
     <string name="answer_stopped">Đã dừng. Lời giải chưa xong nên không được lưu.</string>
     <string name="answer_copy">Sao chép</string>
-    <string name="answer_copied">Đã chép</string>
+    <string name="answer_copied">Đã sao chép</string>
     <string name="answer_share">Chia sẻ</string>
     <string name="answer_ask_again">Hỏi lại</string>
     <string name="answer_retry">Thử lại</string>
