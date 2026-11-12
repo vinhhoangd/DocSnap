@@ -185,6 +185,45 @@ class PdfExporterTest {
         assertTrue(text.startsWith("\nendstream", start + raw.size))
     }
 
+    @Test fun aPageReRenderedMidExportDoesNotMixTwoVersions() {
+        // Regression: the JPEG header and the bytes were read through two separate opens, so a
+        // re-render (new file renamed over the old) in between gave one version's size and the
+        // other's bytes. A snapshot reads both from the one open file.
+        val page = jpeg("page.jpg", 40, 30)
+        val before = page.readBytes()
+        val bytes = ByteArrayOutputStream()
+        PageSnapshot(page).use { snapshot ->
+            val info = JpegInfo.read(snapshot.open())!!
+            // The re-render lands: a bigger image replaces the file by rename, as PageRenderer does.
+            val rerender = File(temp.root, ".page.jpg.tmp").apply { writeBytes(jpegBytes(80, 60, fill = 0x40) + ByteArray(500)) }
+            java.nio.file.Files.move(rerender.toPath(), page.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            assertEquals(80, JpegInfo.read(page)!!.width)
+
+            val writer = PdfWriter(bytes, 1, "x")
+            writer.addPage(snapshot.open(), snapshot.length, info, 40f, 30f, PdfRect(0f, 0f, 40f, 30f))
+            writer.finish()
+        }
+        val pdf = bytes.toByteArray().latin1()
+        assertTrue(pdf.contains("/Width 40 /Height 30 "))
+        assertTrue(pdf.contains("/Length ${before.size} >>\nstream\n"))
+        val start = pdf.indexOf(before.latin1())
+        assertTrue("the opened version is embedded whole", start > 0)
+        assertTrue(pdf.startsWith("\nendstream", start + before.size))
+    }
+
+    @Test fun snapshotStreamsCanBeReadMoreThanOnce() {
+        val page = jpeg("page.jpg", 12, 8)
+        PageSnapshot(page).use { snapshot ->
+            assertEquals(JpegInfo(12, 8, 3, false), JpegInfo.read(snapshot.open()))
+            assertEquals(page.length(), snapshot.length)
+            val copy = File(temp.root, "copy.jpg")
+            snapshot.copyTo(copy)
+            assertTrue(copy.readBytes().contentEquals(page.readBytes()))
+            snapshot.open().use { } // closing a stream leaves the snapshot usable
+            assertEquals(JpegInfo(12, 8, 3, false), JpegInfo.read(snapshot.open()))
+        }
+    }
+
     @Test fun placesTheImageWithABottomLeftOrigin() {
         val square = jpeg("sq.jpg", 100, 100)
         val pdf = writePdf("x", square to PdfPageSize.A4).latin1()

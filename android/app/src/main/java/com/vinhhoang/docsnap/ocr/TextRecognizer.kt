@@ -28,8 +28,20 @@ object TextRecognizer {
         val bitmap = PageRenderer.decodeUpright(image, MAX_DIMENSION)
         val width = bitmap.width.toFloat()
         val height = bitmap.height.toFloat()
-        val client = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        val task = client.process(InputImage.fromBitmap(bitmap, 0))
+        val client = try {
+            TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        } catch (e: Throwable) {
+            bitmap.recycle()
+            throw e
+        }
+        // process() can throw before any task exists (e.g. a bad bitmap): release both right away.
+        val task = try {
+            client.process(InputImage.fromBitmap(bitmap, 0))
+        } catch (e: Throwable) {
+            client.close()
+            bitmap.recycle()
+            throw e
+        }
         val text = try {
             task.await()
         } finally {

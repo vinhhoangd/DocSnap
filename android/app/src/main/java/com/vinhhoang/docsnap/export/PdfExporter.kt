@@ -1,6 +1,7 @@
 package com.vinhhoang.docsnap.export
 
 import android.graphics.Bitmap
+import androidx.exifinterface.media.ExifInterface
 import com.vinhhoang.docsnap.data.DocumentStore
 import com.vinhhoang.docsnap.model.ScanDocument
 import com.vinhhoang.docsnap.processing.PageRenderer
@@ -45,9 +46,21 @@ object PdfExporter {
                             image = File(outputDir, ".page-$index.jpg").also { temps += it }
                             PageRenderer.render(original, page, image)
                         }
-                        val (jpeg, info) = embeddable(image, pageSize, File(outputDir, ".pdf-page-$index.jpg"), temps)
-                        val (pw, ph) = PdfLayout.pageSize(info.width, info.height, pageSize)
-                        writer.addPage(jpeg, info, pw, ph, PdfLayout.fittedRect(info.width, info.height, pw, ph))
+                        // Opened once: a re-render landing mid-export can't mix two versions of the page.
+                        PageSnapshot(image).use { snapshot ->
+                            val info = JpegInfo.read(snapshot.open())
+                            val upright = info != null && PageRenderer.isUpright(exifOrientation(snapshot))
+                            if (info != null && upright) {
+                                val (pw, ph) = PdfLayout.pageSize(info.width, info.height, pageSize)
+                                writer.addPage(snapshot.open(), snapshot.length, info, pw, ph, PdfLayout.fittedRect(info.width, info.height, pw, ph))
+                            } else {
+                                val source = File(outputDir, ".pdf-source-$index.jpg").also { temps += it }
+                                snapshot.copyTo(source)
+                                val (jpeg, encoded) = reencoded(source, pageSize, File(outputDir, ".pdf-page-$index.jpg"), temps)
+                                val (pw, ph) = PdfLayout.pageSize(encoded.width, encoded.height, pageSize)
+                                writer.addPage(jpeg, encoded, pw, ph, PdfLayout.fittedRect(encoded.width, encoded.height, pw, ph))
+                            }
+                        }
                         temps.forEach { it.delete() }
                         temps.clear()
                     }
@@ -80,11 +93,17 @@ object PdfExporter {
     private const val INVALID = "/\\?%*|\"<>:"
     private const val MAX_NAME = 100
 
-    /** The JPEG to embed for `image`: the file itself when possible, else a re-encoded copy at `temp`. */
-    private fun embeddable(image: File, pageSize: PdfPageSize, temp: File, temps: MutableList<File>): Pair<File, JpegInfo> {
-        val info = JpegInfo.read(image)
-        if (info != null && PageRenderer.isUpright(PageRenderer.exifOrientation(image))) return image to info
+    private fun exifOrientation(snapshot: PageSnapshot): Int = try {
+        snapshot.open().use { ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL) }
+    } catch (e: Exception) {
+        ExifInterface.ORIENTATION_NORMAL
+    }
 
+    /**
+     * A page that isn't a plain upright JPEG, re-encoded upright at `temp`. `image` is a private
+     * copy (never the live page file), so nothing can change it meanwhile.
+     */
+    private fun reencoded(image: File, pageSize: PdfPageSize, temp: File, temps: MutableList<File>): Pair<File, JpegInfo> {
         // Size the decode for ~200 DPI where the image lands on the page.
         val bitmapProbe = PageRenderer.imageSize(image)
         val orientation = PageRenderer.exifOrientation(image)
