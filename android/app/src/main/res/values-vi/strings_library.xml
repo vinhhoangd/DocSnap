@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thư viện -->
+    <string name="lib_title">Tài liệu</string>
+    <string name="lib_search_hint">Tìm theo tên hoặc chữ</string>
+    <string name="lib_search_clear">Xóa ô tìm</string>
+    <string name="lib_view_grid">Xem dạng lưới</string>
+    <string name="lib_view_list">Xem dạng danh sách</string>
+    <string name="lib_settings">Cài đặt</string>
+    <string name="lib_scan">Quét</string>
+    <string name="lib_empty_title">Chưa có tài liệu nào</string>
+    <string name="lib_empty_body">Bấm Quét để quét tờ giấy đầu tiên.</string>
+    <string name="lib_no_results">Không tìm thấy “%1$s”</string>
+    <string name="lib_section_today">Hôm nay</string>
+    <string name="lib_section_yesterday">Hôm qua</string>
+    <string name="lib_section_previous_7_days">7 ngày qua</string>
+    <plurals name="lib_page_count">
+        <item quantity="other">%d trang</item>
+    </plurals>
+    <string name="lib_action_rename">Đổi tên</string>
+    <string name="lib_action_save">Lưu</string>
+    <string name="lib_rename_title">Đổi tên tài liệu</string>
+    <string name="lib_rename_label">Tên</string>
+    <string name="lib_delete_doc_title">Xóa tài liệu này?</string>
+    <string name="lib_delete_doc_body">“%1$s” và mọi trang trong đó sẽ bị xóa, không lấy lại được.</string>
+    <string name="lib_more_actions">Thêm tùy chọn</string>
+    <string name="lib_more_actions_for">Tùy chọn cho “%1$s”</string>
+    <string name="lib_saving">Đang lưu…</string>
+    <string name="lib_copied">Đã sao chép</string>
+    <string name="lib_share_chooser_title">Chia sẻ qua</string>
+
+    <!-- Trình quét -->
+    <string name="lib_scan_error_play_services_missing">Máy cần có Google Play services thì mới quét được.</string>
+    <string name="lib_scan_error_play_services_update">Vào CH Play cập nhật Google Play services rồi thử lại nhé.</string>
+    <string name="lib_scan_error_downloading">Trình quét đang tải về. Đợi một chút rồi thử lại nhé.</string>
+    <string name="lib_scan_error_no_space">Máy hết dung lượng. Xóa bớt ảnh hoặc ứng dụng rồi thử lại.</string>
+    <string name="lib_scan_error_generic">Không mở được trình quét. Thử lại nhé.</string>
+    <string name="lib_error_save_scan">Không lưu được các trang vừa quét. Thử lại nhé.</string>
+
+    <!-- Tài liệu -->
+    <string name="lib_doc_add_pages">Thêm trang</string>
+    <string name="lib_doc_share_pdf">Chia sẻ PDF</string>
+    <string name="lib_doc_share_images">Chia sẻ ảnh (JPEG)</string>
+    <string name="lib_doc_copy_text">Sao chép hết chữ</string>
+    <string name="lib_doc_delete">Xóa tài liệu</string>
+    <string name="lib_doc_no_text">Tài liệu này không có chữ nào.</string>
+    <string name="lib_page_number">Trang %1$d</string>
+    <string name="lib_page_actions_for">Tùy chọn cho trang %1$d</string>
+    <string name="lib_page_move_left">Dời sang trái</string>
+    <string name="lib_page_move_right">Dời sang phải</string>
+    <string name="lib_page_rotate">Xoay</string>
+    <string name="lib_page_delete">Xóa trang</string>
+    <string name="lib_delete_page_title">Xóa trang này?</string>
+    <string name="lib_delete_page_body">Xóa rồi thì không lấy lại được.</string>
+    <string name="lib_delete_last_page_body">Đây là trang duy nhất nên cả tài liệu sẽ bị xóa luôn.</string>
+    <string name="lib_making_pdf">Đang tạo PDF…</string>
+    <string name="lib_preparing_images">Đang chuẩn bị ảnh…</string>
+    <string name="lib_reading_text">Đang đọc chữ…</string>
+    <string name="lib_share_error">Không tạo được tệp để chia sẻ. Thử lại nhé.</string>
+    <string name="lib_no_share_app">Máy không có ứng dụng nào nhận được tệp này.</string>
+
+    <!-- Xem trang -->
+    <string name="lib_viewer_position">%1$d / %2$d</string>
+    <string name="lib_viewer_position_spoken">Trang %1$d trên %2$d</string>
+    <string name="lib_filters">Bộ lọc</string>
+    <string name="lib_filter_original">Gốc</string>
+    <string name="lib_filter_magic_color">Tăng màu</string>
+    <string name="lib_filter_grayscale">Xám</string>
+    <string name="lib_filter_black_white">Đen trắng</string>
+    <string name="lib_filter_lighten">Làm sáng</string>
+    <string name="lib_viewer_text">Chữ</string>
+    <string name="lib_viewer_answer">Giải đáp</string>
+    <string name="lib_applying">Đang áp dụng…</string>
+    <string name="lib_text_title">Chữ trên trang này</string>
+    <string name="lib_text_none">Trang này không có chữ nào.</string>
+    <string name="lib_text_copy">Sao chép</string>
+    <string name="lib_text_share">Chia sẻ chữ</string>
+    <string name="lib_text_error">Không đọc được chữ.</string>
+    <string name="lib_text_retry">Thử lại</string>
+</resources>

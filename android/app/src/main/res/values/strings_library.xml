@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Library, scanner, document and page viewer screens. Vietnamese copies in values-vi/strings_library.xml. -->
+<resources>
+    <!-- Library -->
+    <string name="lib_title">Documents</string>
+    <string name="lib_search_hint">Search names and text</string>
+    <string name="lib_search_clear">Clear search</string>
+    <string name="lib_view_grid">Show as grid</string>
+    <string name="lib_view_list">Show as list</string>
+    <string name="lib_settings">Settings</string>
+    <string name="lib_scan">Scan</string>
+    <string name="lib_empty_title">No documents yet</string>
+    <string name="lib_empty_body">Tap Scan to scan your first paper.</string>
+    <string name="lib_no_results">Nothing found for “%1$s”</string>
+    <string name="lib_section_today">Today</string>
+    <string name="lib_section_yesterday">Yesterday</string>
+    <string name="lib_section_previous_7_days">Previous 7 Days</string>
+    <plurals name="lib_page_count">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <string name="lib_action_rename">Rename</string>
+    <string name="lib_action_save">Save</string>
+    <string name="lib_rename_title">Rename document</string>
+    <string name="lib_rename_label">Name</string>
+    <string name="lib_delete_doc_title">Delete this document?</string>
+    <string name="lib_delete_doc_body">“%1$s” and all its pages will be deleted. This can\'t be undone.</string>
+    <string name="lib_more_actions">More options</string>
+    <string name="lib_more_actions_for">Options for “%1$s”</string>
+    <string name="lib_saving">Saving…</string>
+    <string name="lib_copied">Copied</string>
+    <string name="lib_share_chooser_title">Share with</string>
+
+    <!-- Scanner -->
+    <string name="lib_scan_error_play_services_missing">This phone needs Google Play services to scan.</string>
+    <string name="lib_scan_error_play_services_update">Please update Google Play services in the Play Store, then try again.</string>
+    <string name="lib_scan_error_downloading">The scanner is still downloading. Wait a minute and try again.</string>
+    <string name="lib_scan_error_no_space">The phone is out of space. Delete some photos or apps and try again.</string>
+    <string name="lib_scan_error_generic">Couldn\'t open the scanner. Please try again.</string>
+    <string name="lib_error_save_scan">Couldn\'t save the scanned pages. Please try again.</string>
+
+    <!-- Document -->
+    <string name="lib_doc_add_pages">Add pages</string>
+    <string name="lib_doc_share_pdf">Share PDF</string>
+    <string name="lib_doc_share_images">Share images (JPEG)</string>
+    <string name="lib_doc_copy_text">Copy all text</string>
+    <string name="lib_doc_delete">Delete document</string>
+    <string name="lib_doc_no_text">No text found in this document.</string>
+    <string name="lib_page_number">Page %1$d</string>
+    <string name="lib_page_actions_for">Options for page %1$d</string>
+    <string name="lib_page_move_left">Move left</string>
+    <string name="lib_page_move_right">Move right</string>
+    <string name="lib_page_rotate">Rotate</string>
+    <string name="lib_page_delete">Delete page</string>
+    <string name="lib_delete_page_title">Delete this page?</string>
+    <string name="lib_delete_page_body">This can\'t be undone.</string>
+    <string name="lib_delete_last_page_body">This is the only page, so the whole document will be deleted.</string>
+    <string name="lib_making_pdf">Making PDF…</string>
+    <string name="lib_preparing_images">Preparing images…</string>
+    <string name="lib_reading_text">Reading text…</string>
+    <string name="lib_share_error">Couldn\'t make the file to share. Please try again.</string>
+    <string name="lib_no_share_app">No app on this phone can take this file.</string>
+
+    <!-- Page viewer -->
+    <string name="lib_viewer_position">%1$d / %2$d</string>
+    <string name="lib_viewer_position_spoken">Page %1$d of %2$d</string>
+    <string name="lib_filters">Filters</string>
+    <string name="lib_filter_original">Original</string>
+    <string name="lib_filter_magic_color">Magic Color</string>
+    <string name="lib_filter_grayscale">Grayscale</string>
+    <string name="lib_filter_black_white">B&amp;W</string>
+    <string name="lib_filter_lighten">Lighten</string>
+    <string name="lib_viewer_text">Text</string>
+    <string name="lib_viewer_answer">Answer</string>
+    <string name="lib_applying">Applying…</string>
+    <string name="lib_text_title">Text on this page</string>
+    <string name="lib_text_none">No text found on this page.</string>
+    <string name="lib_text_copy">Copy</string>
+    <string name="lib_text_share">Share text</string>
+    <string name="lib_text_error">Couldn\'t read the text.</string>
+    <string name="lib_text_retry">Try again</string>
+</resources>
