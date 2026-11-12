@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="answer_button">Giải bài</string>
+    <string name="answer_title">Lời giải</string>
+    <string name="answer_start">Giải các câu hỏi trên trang này</string>
+    <string name="answer_intro">Claude sẽ đọc trang này rồi giải từng câu, có ghi các bước làm.</string>
+    <string name="answer_privacy">Khi bấm nút, ảnh của trang sẽ được gửi tới Claude (AI của Anthropic) qua máy chủ DocSnap. Chưa bấm thì chưa gửi gì cả.</string>
+    <string name="answer_privacy_ocr">Chữ đã nhận dạng trên trang cũng được gửi kèm, để đọc chữ nhỏ cho chính xác.</string>
+    <string name="answer_model_will_use">Dùng %1$s</string>
+    <string name="answer_model_by">Lời giải từ %1$s</string>
+    <string name="answer_waiting_title">Đang đọc trang…</string>
+    <string name="answer_waiting_body">Claude đang giải, có khi mất tới một phút.</string>
+    <string name="answer_stop">Dừng</string>
+    <string name="answer_stopped">Đã dừng. Lời giải chưa xong nên không được lưu.</string>
+    <string name="answer_copy">Sao chép</string>
+    <string name="answer_copied">Đã chép</string>
+    <string name="answer_share">Chia sẻ</string>
+    <string name="answer_ask_again">Hỏi lại</string>
+    <string name="answer_retry">Thử lại</string>
+    <string name="answer_close">Đóng</string>
+    <string name="answer_disclaimer">AI cũng có lúc sai, nhớ kiểm tra lại những bước quan trọng nhé.</string>
+    <string name="answer_truncated">Lời giải dài quá nên bị cắt bớt phần cuối.</string>
+
+    <string name="answer_error_title">Chưa giải được</string>
+    <string name="answer_error_not_configured">Bản ứng dụng này chưa bật tính năng giải bài.</string>
+    <string name="answer_error_server_setup">Máy chủ DocSnap chưa được thiết lập xong.</string>
+    <string name="answer_error_image_unavailable">Không đọc được ảnh của trang này.</string>
+    <string name="answer_error_too_large">Ảnh trang này lớn quá, không gửi được.</string>
+    <string name="answer_error_unauthorized">Máy chủ DocSnap không nhận ứng dụng này. Cài bản mới nhất rồi thử lại.</string>
+    <string name="answer_error_rate_limited">Claude đang bận. Đợi khoảng một phút rồi thử lại nhé.</string>
+    <string name="answer_error_network">Không kết nối được máy chủ DocSnap. Kiểm tra Wi‑Fi hoặc 4G rồi thử lại.</string>
+    <string name="answer_error_timeout">Claude trả lời lâu quá. Thử lại nhé.</string>
+    <string name="answer_error_interrupted">Lời giải bị ngắt giữa chừng. Thử lại nhé.</string>
+    <string name="answer_error_bad_request">Claude không đọc được trang này. Thử quét lại xem.</string>
+    <string name="answer_error_server">Máy chủ DocSnap đang trục trặc. Lát nữa thử lại nhé.</string>
+    <string name="answer_error_refusal">Claude từ chối giải trang này.</string>
+    <string name="answer_error_empty">Claude không đưa ra lời giải nào. Thử lại nhé.</string>
+    <string name="answer_error_generic">Có lỗi xảy ra. Thử lại nhé.</string>
+</resources>

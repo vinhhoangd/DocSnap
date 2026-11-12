@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings screen (ui/settings). Vietnamese copies in values-vi/strings_settings.xml. -->
+    <string name="settings_title">Settings</string>
+
+    <string name="settings_section_display">Display</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_system">Same as the phone</string>
+    <string name="settings_appearance_light">Light</string>
+    <string name="settings_appearance_dark">Dark</string>
+
+    <string name="settings_section_language">Language</string>
+    <string name="settings_language">App language</string>
+    <string name="settings_language_system">Same as the phone</string>
+    <string name="settings_language_follows_phone">Follows the phone\'s language</string>
+
+    <string name="settings_section_scanning">Scanning</string>
+    <string name="settings_default_filter">Default filter</string>
+    <string name="settings_default_filter_footer">Used for new scans. Each page\'s filter can still be changed later.</string>
+    <string name="settings_filter_original">Original</string>
+    <string name="settings_filter_magic_color">Magic Color</string>
+    <string name="settings_filter_grayscale">Grayscale</string>
+    <string name="settings_filter_black_white">Black &amp; White</string>
+    <string name="settings_filter_lighten">Lighten</string>
+
+    <string name="settings_section_answers">AI Answers</string>
+    <string name="settings_model">AI model</string>
+    <string name="settings_model_opus_detail">Most accurate, a little slower</string>
+    <string name="settings_model_sonnet_detail">Faster, still very good</string>
+    <string name="settings_model_haiku_detail">Fastest, for easy questions</string>
+    <string name="settings_server">Answer server</string>
+    <string name="settings_server_checking">Checking…</string>
+    <string name="settings_server_connected">Connected</string>
+    <string name="settings_server_not_set_up">Not set up</string>
+    <string name="settings_server_unreachable">Can\'t connect · tap to retry</string>
+    <string name="settings_answers_footer">The Answer button sends the page image to Claude through the DocSnap server. Nothing is sent until it\'s tapped.</string>
+
+    <string name="settings_section_pdf">PDF</string>
+    <string name="settings_page_size">Page size</string>
+    <string name="settings_page_size_auto">Auto (fits each page)</string>
+    <string name="settings_page_size_a4">A4</string>
+    <string name="settings_page_size_letter">Letter (US)</string>
+
+    <string name="settings_section_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_privacy_footer">Scanning, border detection and text recognition all run on the phone. Only the Answer button sends a page, and only when tapped.</string>
+</resources>
