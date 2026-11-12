@@ -165,6 +165,52 @@ class AnswerClientTest {
         assertEquals(AnswerErrors.TIMEOUT, last.code)
     }
 
+    @Test fun serverPingsKeepALongThinkAlive() {
+        // The server's keep-alive: a silence longer than the read timeout, broken up by ping lines.
+        val listener = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
+        val serverThread = thread {
+            runCatching {
+                listener.accept().use { socket ->
+                    val input = socket.source().buffer()
+                    var length = 0L
+                    while (true) {
+                        val header = input.readUtf8LineStrict()
+                        if (header.isEmpty()) break
+                        if (header.startsWith("content-length:", ignoreCase = true)) length = header.substringAfter(':').trim().toLong()
+                    }
+                    input.skip(length)
+                    val out = socket.getOutputStream()
+                    fun chunk(line: String) {
+                        val bytes = (line + "\n").toByteArray()
+                        out.write((Integer.toHexString(bytes.size) + "\r\n").toByteArray())
+                        out.write(bytes)
+                        out.write("\r\n".toByteArray())
+                        out.flush()
+                    }
+                    out.write("HTTP/1.1 200 OK\r\nContent-Type: application/x-ndjson\r\nTransfer-Encoding: chunked\r\n\r\n".toByteArray())
+                    chunk(start)
+                    repeat(8) {
+                        Thread.sleep(150)
+                        chunk("""{"type":"ping"}""")
+                    }
+                    chunk(text("done thinking"))
+                    chunk(done)
+                    out.write("0\r\n\r\n".toByteArray())
+                    out.flush()
+                }
+            }
+        }
+        try {
+            // 8 × 150 ms = 1.2 s of thinking, far past the 400 ms read timeout, but no single read waits that long.
+            val http = OkHttpClient.Builder().readTimeout(400, TimeUnit.MILLISECONDS).build()
+            val result = events(client(http = http, base = "http://127.0.0.1:${listener.localPort}"))
+            assertEquals(listOf(AnswerEvent.Start("claude-opus-5-5"), AnswerEvent.Text("done thinking"), doneEvent), result)
+        } finally {
+            listener.close()
+            serverThread.join(2_000)
+        }
+    }
+
     @Test fun unreachableServerIsANetworkError() {
         val url = baseUrl
         server.shutdown()
@@ -263,6 +309,20 @@ class AnswerClientTest {
         val result = events(client(token = " "))
         assertEquals(AnswerErrors.NOT_CONFIGURED, (result.single() as AnswerEvent.Error).code)
         assertEquals(0, server.requestCount)
+    }
+
+    @Test fun malformedTokenIsNotConfiguredAndNeverReachesOkHttp() {
+        // OkHttp throws IllegalArgumentException for these, with the token in the message.
+        listOf("secret\nvalue", "secret\r", "tökén", "tab\u0000null", "emoji📄").forEach { bad ->
+            val c = client(token = bad)
+            assertFalse(bad, c.isConfigured)
+            val error = events(c).single() as AnswerEvent.Error
+            assertEquals(AnswerErrors.NOT_CONFIGURED, error.code)
+            assertFalse("the token must not appear in the message", error.message.contains(bad))
+        }
+        assertEquals(0, server.requestCount)
+        assertTrue(AnswerClient.isUsableToken("abc-DEF_123.~!"))
+        assertFalse(AnswerClient.isUsableToken("   "))
     }
 
     @Test fun notConfiguredWithoutUrl() {

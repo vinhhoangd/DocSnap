@@ -2,8 +2,8 @@ package com.vinhhoang.docsnap.answer
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
+import com.vinhhoang.docsnap.processing.PageRenderer
 import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.max
@@ -58,7 +58,11 @@ object BitmapUploadEncoder : UploadImageEncoder {
         val firstSide = UploadSizing.steps.first().first
         val decoded = BitmapFactory.decodeFile(
             image.path,
-            BitmapFactory.Options().apply { inSampleSize = UploadSizing.sampleSize(longest, firstSide) },
+            BitmapFactory.Options().apply {
+                inSampleSize = UploadSizing.sampleSize(longest, firstSide)
+                // Claude reads the JPEG as sRGB; convert wide-gamut (Display P3) photos.
+                inPreferredColorSpace = PageRenderer.SRGB
+            },
         ) ?: return null
         val upright = applyExif(image, decoded)
         try {
@@ -68,7 +72,8 @@ object BitmapUploadEncoder : UploadImageEncoder {
         }
     }
 
-    private fun jpeg(source: Bitmap, longestSide: Int, quality: Int): ByteArray {
+    /** The image at `longestSide` as JPEG bytes, or null if encoding fails. */
+    private fun jpeg(source: Bitmap, longestSide: Int, quality: Int): ByteArray? {
         val longest = max(source.width, source.height)
         val bitmap = if (longest > longestSide) {
             val scale = longestSide.toFloat() / longest
@@ -81,24 +86,31 @@ object BitmapUploadEncoder : UploadImageEncoder {
         } else {
             source
         }
-        val out = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
-        if (bitmap !== source) bitmap.recycle()
-        return out.toByteArray()
+        try {
+            val out = ByteArrayOutputStream()
+            // A failed encode would otherwise send a truncated (or empty) image.
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)) return null
+            return out.toByteArray()
+        } finally {
+            if (bitmap !== source) bitmap.recycle()
+        }
     }
 
+    /** Applies the EXIF orientation, all eight cases (mirrored and transposed ones too). */
     private fun applyExif(file: File, bitmap: Bitmap): Bitmap {
         val orientation = runCatching {
             ExifInterface(file.path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
         }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
-        val degrees = when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-            else -> return bitmap
+        if (PageRenderer.isUpright(orientation)) return bitmap
+        val matrix = PageRenderer.orientationMatrix(orientation)
+        if (matrix.isIdentity) return bitmap
+        val upright = try {
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        } catch (e: Throwable) {
+            bitmap.recycle()
+            throw e
         }
-        val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, Matrix().apply { postRotate(degrees) }, true)
-        if (rotated !== bitmap) bitmap.recycle()
-        return rotated
+        if (upright !== bitmap) bitmap.recycle()
+        return upright
     }
 }

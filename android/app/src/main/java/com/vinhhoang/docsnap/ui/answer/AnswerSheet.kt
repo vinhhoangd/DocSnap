@@ -65,6 +65,7 @@ import com.vinhhoang.docsnap.answer.AnswerErrors
 import com.vinhhoang.docsnap.answer.AnswerEvent
 import com.vinhhoang.docsnap.answer.answerModelName
 import com.vinhhoang.docsnap.model.PageAnswer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -104,13 +105,20 @@ fun AnswerSheet(documentId: String, pageId: String, onDismiss: () -> Unit) {
         val ocr = current.recognizedText?.takeIf { it.isNotBlank() }
         state = AnswerUiState.started(model)
         job = scope.launch {
-            app.answers.answer(image, ocr, model).collect { event ->
-                state = state.reduce(event)
-                if (event is AnswerEvent.Done && state.phase == AnswerPhase.Finished) {
-                    val answer = PageAnswer(state.text, state.model, System.currentTimeMillis(), version)
-                    // App scope: closing the sheet right after "done" must not lose the save.
-                    app.appScope.launch { runCatching { app.store.setAnswer(documentId, pageId, answer) } }
+            try {
+                app.answers.answer(image, ocr, model).collect { event ->
+                    state = state.reduce(event)
+                    if (event is AnswerEvent.Done && state.phase == AnswerPhase.Finished) {
+                        val answer = PageAnswer(state.text, state.model, System.currentTimeMillis(), version)
+                        // App scope: closing the sheet right after "done" must not lose the save.
+                        app.appScope.launch { runCatching { app.store.setAnswer(documentId, pageId, answer) } }
+                    }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // The client maps failures to Error events; anything that still escapes must not crash the app.
+                state = state.reduce(AnswerEvent.Error(AnswerErrors.NETWORK, "Couldn't reach the DocSnap server."))
             }
             state = state.ended()
         }

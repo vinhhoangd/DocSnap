@@ -78,9 +78,13 @@ class AnswerClient(
 ) {
     private val answerUrl: HttpUrl? = baseUrl.trim().trimEnd('/').let { "$it/api/answer" }.toHttpUrlOrNull()
 
-    /** True when the app was built with a server address and token (local.properties). */
+    /**
+     * True when the app was built with a server address and a usable token (local.properties).
+     * The token must be printable ASCII: OkHttp rejects anything else in a header, and its exception
+     * message would carry the token into logcat.
+     */
     val isConfigured: Boolean
-        get() = token.isNotBlank() && answerUrl != null &&
+        get() = isUsableToken(token) && answerUrl != null &&
             (answerUrl.isHttps || answerUrl.host in LOOPBACK_HOSTS)
 
     private val http: OkHttpClient = httpClient ?: OkHttpClient.Builder()
@@ -117,10 +121,20 @@ class AnswerClient(
                 base64Length(jpeg.size) > MAX_IMAGE_BASE64 ->
                     send(AnswerEvent.Error(AnswerErrors.IMAGE_TOO_LARGE, "This page's image is too large to send."))
                 else -> {
-                    val call = http.newCall(buildRequest(url, jpeg, ocrText, model))
-                    callRef.set(call)
-                    if (cancelled.get()) call.cancel()
-                    stream(call) { send(it) }
+                    // Never let a bad header value escape: its exception message contains the value.
+                    val request = try {
+                        buildRequest(url, jpeg, ocrText, model)
+                    } catch (e: RuntimeException) {
+                        null
+                    }
+                    if (request == null) {
+                        send(AnswerEvent.Error(AnswerErrors.NOT_CONFIGURED, "The app's DocSnap server settings are invalid."))
+                    } else {
+                        val call = http.newCall(request)
+                        callRef.set(call)
+                        if (cancelled.get()) call.cancel()
+                        stream(call) { send(it) }
+                    }
                 }
             }
             close()
@@ -220,6 +234,10 @@ class AnswerClient(
         private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
         private val json = Json { ignoreUnknownKeys = true }
 
+        /** A token OkHttp accepts as a header value: non-blank, printable ASCII only. */
+        fun isUsableToken(token: String): Boolean =
+            token.isNotBlank() && token.all { it in ' '..'~' }
+
         /** Length of the base64 text for `bytes` bytes (with padding). */
         fun base64Length(bytes: Int): Long = 4L * ((bytes + 2) / 3)
 
@@ -235,6 +253,8 @@ class AnswerClient(
                 "text" -> str("text")?.let { AnswerEvent.Text(it) }
                 "done" -> AnswerEvent.Done(str("stopReason"), str("model").orEmpty(), int("inputTokens"), int("outputTokens"))
                 "error" -> AnswerEvent.Error(str("code") ?: "error", str("message") ?: "Something went wrong.")
+                // Keep-alive line the server sends every 15 s while Claude thinks; reading it resets the read timeout.
+                "ping" -> null
                 else -> null
             }
         }
