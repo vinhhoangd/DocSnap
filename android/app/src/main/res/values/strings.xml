@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">DocSnap</string>
+    <!-- Shared strings. Feature screens keep theirs in strings_<feature>.xml (with values-vi copies). -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_done">Done</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_share">Share</string>
+    <string name="action_ok">OK</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+</resources>

@@ -1,0 +1,10 @@
+# Machine-specific SDK path, API URL / app token and signing passwords. Never commit.
+local.properties
+keystore/
+.gradle/
+build/
+app/build/
+.idea/
+*.iml
+.kotlin/
+captures/

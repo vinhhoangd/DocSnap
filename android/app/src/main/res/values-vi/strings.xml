@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_back">Quay lại</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_done">Xong</string>
+    <string name="action_delete">Xóa</string>
+    <string name="action_share">Chia sẻ</string>
+    <string name="action_ok">OK</string>
+    <string name="error_generic">Có lỗi xảy ra. Vui lòng thử lại.</string>
+</resources>
