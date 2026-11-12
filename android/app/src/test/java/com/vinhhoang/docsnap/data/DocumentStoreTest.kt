@@ -268,6 +268,131 @@ class DocumentStoreTest {
         assertTrue(File(root, "broken").exists()) // never deleted automatically
     }
 
+    // MARK: - Crash and power-loss recovery
+
+    private fun json(docId: String) = File(root, "$docId/${DocumentStore.DOCUMENT_JSON}")
+
+    @Test fun writeKeepsThePreviousVersionAsBackupAndLeavesNoTemp() = runTest {
+        val store = store(StandardTestDispatcher(testScheduler))
+        val doc = store.createDocument(listOf(source("a")), ScanFilter.MagicColor, title = "First")
+        assertFalse("the first save has nothing to back up", File(store.folder(doc.id), DocumentStore.DOCUMENT_BAK).exists())
+        store.rename(doc.id, "Second")
+        val dir = store.folder(doc.id)
+        assertTrue(File(dir, DocumentStore.DOCUMENT_BAK).readText().contains("\"First\""))
+        assertTrue(json(doc.id).readText().contains("\"Second\""))
+        assertFalse(File(dir, DocumentStore.DOCUMENT_TMP).exists())
+    }
+
+    @Test fun emptyDocumentJsonAfterPowerLossFallsBackToTheBackup() = runTest {
+        // Regression: a power cut could leave document.json empty and the document vanished.
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val first = store(dispatcher)
+        val doc = first.createDocument(listOf(source("a")), ScanFilter.Grayscale, title = "Hóa đơn")
+        first.setText(doc.id, doc.pages.single().id, 0, listOf(TextLine("Tổng cộng")))
+        json(doc.id).writeText("")
+
+        val store = store(dispatcher)
+        store.load()
+        val loaded = store.document(doc.id)!!
+        assertEquals("Hóa đơn", loaded.title)
+        assertEquals(ScanFilter.Grayscale, loaded.pages.single().filter)
+        assertNull("the backup is one save behind", loaded.pages.single().textLines)
+        // document.json is repaired, so the next launch reads it directly.
+        assertEquals(loaded, DocumentStore.json.decodeFromString(ScanDocument.serializer(), json(doc.id).readText()))
+    }
+
+    @Test fun aCompleteTempFileWinsOverTheBackup() = runTest {
+        // Killed after the temp file was synced but before the rename.
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val first = store(dispatcher)
+        val doc = first.createDocument(listOf(source("a")), ScanFilter.MagicColor, title = "Old")
+        first.rename(doc.id, "Middle")
+        val newest = first.document(doc.id)!!.copy(title = "Newest")
+        File(first.folder(doc.id), DocumentStore.DOCUMENT_TMP)
+            .writeText(DocumentStore.json.encodeToString(ScanDocument.serializer(), newest))
+        json(doc.id).writeText("{\"id\":\"${doc.id}\",\"tit") // torn write
+
+        val store = store(dispatcher)
+        store.load()
+        assertEquals("Newest", store.document(doc.id)!!.title)
+        assertFalse(File(store.folder(doc.id), DocumentStore.DOCUMENT_TMP).exists())
+    }
+
+    @Test fun aBackupThatIsBehindGetsThePagesItDoesNotKnow() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val first = store(dispatcher)
+        val doc = first.createDocument(listOf(source("a")), ScanFilter.MagicColor)
+        Thread.sleep(5)
+        first.addPages(doc.id, listOf(source("b")), ScanFilter.BlackWhite) // the backup has only page a
+        json(doc.id).writeText("")
+
+        val store = store(dispatcher)
+        store.load()
+        val pages = store.document(doc.id)!!.pages
+        assertEquals(listOf("a", "b"), pages.map { store.originalFile(doc.id, it.id).readText() })
+        assertTrue(store.processedFile(doc.id, pages[1].id).exists())
+    }
+
+    @Test fun aScanKilledMidCreateIsRebuiltFromItsImages() = runTest {
+        // Regression: the app killed between copying the pages and writing document.json left a
+        // folder that load() ignored forever, so the scan silently disappeared.
+        val id = "6f1c2b9e-0000-4000-8000-000000000001"
+        val original = File(root, "$id/original").apply { mkdirs() }
+        val createdAt = 1_790_000_000_000L
+        // UUID file names sort differently from the scan order; modification time is the truth.
+        listOf("zz-first" to "page 1", "aa-second" to "page 2", "mm-third" to "page 3").forEachIndexed { i, (name, body) ->
+            File(original, "$name.jpg").apply { writeText(body) }.setLastModified(createdAt + i * 1000L)
+        }
+        File(root, "$id/processed").mkdirs()
+        File(root, "$id/processed/zz-first.jpg").writeText("half a render, other filter")
+
+        val store = store(StandardTestDispatcher(testScheduler))
+        store.load()
+        val doc = store.document(id)!!
+        assertEquals(listOf("zz-first", "aa-second", "mm-third"), doc.pages.map { it.id })
+        assertTrue(doc.pages.all { it.filter == ScanFilter.MagicColor })
+        assertEquals(ScanDocument.defaultTitle(createdAt), doc.title)
+        assertEquals(createdAt, doc.createdAt)
+        doc.pages.forEach { assertTrue(store.processedFile(id, it.id).readText().contains("magicColor")) }
+        assertTrue(store.loaded.value)
+
+        // It is saved, so the next launch reads it like any other document.
+        val again = store(StandardTestDispatcher(testScheduler))
+        again.load()
+        assertEquals(doc, again.document(id))
+    }
+
+    @Test fun aRebuiltPageThatCannotBeRenderedIsDropped() = runTest {
+        val id = "6f1c2b9e-0000-4000-8000-000000000002"
+        val original = File(root, "$id/original").apply { mkdirs() }
+        File(original, "good.jpg").apply { writeText("ok") }.setLastModified(1_000_000L)
+        File(original, "cut.jpg").apply { writeText("truncated") }.setLastModified(2_000_000L)
+        failRenderOn = 2
+        val store = store(StandardTestDispatcher(testScheduler))
+        store.load()
+        assertEquals(listOf("good"), store.document(id)!!.pages.map { it.id })
+        assertFalse(File(original, "cut.jpg").exists())
+    }
+
+    @Test fun orphanPageFilesFromAnInterruptedAddPagesAreSwept() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val doc = store(dispatcher).createDocument(listOf(source("a")), ScanFilter.MagicColor)
+        val pageId = doc.pages.single().id
+        val dir = File(root, doc.id)
+        File(dir, "original/orphan.jpg").writeText("x")
+        File(dir, "processed/orphan.jpg").writeText("x")
+        File(dir, "processed/.$pageId.jpg.tmp").writeText("half a render")
+
+        val store = store(dispatcher)
+        store.load()
+        assertEquals(listOf(pageId), store.document(doc.id)!!.pages.map { it.id })
+        assertFalse(File(dir, "original/orphan.jpg").exists())
+        assertFalse(File(dir, "processed/orphan.jpg").exists())
+        assertFalse(File(dir, "processed/.$pageId.jpg.tmp").exists())
+        assertTrue(store.originalFile(doc.id, pageId).exists())
+        assertTrue(store.processedFile(doc.id, pageId).exists())
+    }
+
     @Test fun loadToleratesUnknownFieldsAndFilters() = runTest {
         val id = "11111111-2222-3333-4444-555555555555"
         File(root, id).apply { mkdirs() }.resolve(DocumentStore.DOCUMENT_JSON).writeText(

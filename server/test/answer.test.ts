@@ -10,10 +10,12 @@ import {
   ALLOWED_MODELS,
   DEFAULT_MODEL,
   GET,
+  KEEP_ALIVE_MS,
   POST,
   handleAnswer,
   parseAnswerRequest,
   streamAnswer,
+  toNDJSONStream,
   type AnswerEvent,
   type AnswerRequest,
 } from "../api/answer.ts";
@@ -561,5 +563,65 @@ describe("handleAnswer streaming (fake Anthropic HTTP)", () => {
     assert.equal(last.code, "bad_request");
     assert.match(last.message, /Could not process image/);
     assert.doesNotMatch(last.message, /\{"type"/, `message shown in the app: ${last.message}`);
+  });
+});
+
+// MARK: - Keep-alive pings
+
+describe("toNDJSONStream keep-alive", () => {
+  const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+  const timers = () => process.getActiveResourcesInfo().filter((r) => r === "Timeout").length;
+  const decoder = new TextDecoder();
+
+  test("pings every 15 s by default", () => {
+    assert.equal(KEEP_ALIVE_MS, 15_000);
+  });
+
+  test("pings while Claude is silent, and stops once the answer is done", async () => {
+    const before = timers();
+    async function* slow(): AsyncGenerator<AnswerEvent> {
+      yield { type: "start", model: DEFAULT_MODEL };
+      await sleep(130); // a long think with no output
+      yield { type: "text", text: "**x = 2**" };
+      yield { type: "done", stopReason: "end_turn", model: DEFAULT_MODEL, inputTokens: 1, outputTokens: 2 };
+    }
+    const lines = await readNDJSON(new Response(toNDJSONStream(slow(), 25)));
+    const pings = lines.filter((l) => l.type === "ping");
+    assert.ok(pings.length >= 2, `expected pings during the silence, got ${JSON.stringify(lines)}`);
+    assert.deepEqual(pings[0], { type: "ping" });
+    assert.deepEqual(lines.filter((l) => l.type !== "ping").map((l) => l.type), ["start", "text", "done"]);
+    assert.equal(lines[0].type, "start");
+    assert.equal(lines.at(-1).type, "done", "nothing follows done");
+    assert.equal(timers(), before, "the ping timer is cleared when the stream ends");
+  });
+
+  test("a quick answer has no pings", async () => {
+    async function* quick(): AsyncGenerator<AnswerEvent> {
+      yield { type: "start", model: DEFAULT_MODEL };
+      yield { type: "done", stopReason: "end_turn", model: DEFAULT_MODEL, inputTokens: 1, outputTokens: 2 };
+    }
+    const lines = await readNDJSON(new Response(toNDJSONStream(quick())));
+    assert.deepEqual(lines.map((l) => l.type), ["start", "done"]);
+  });
+
+  test("the app going away stops the pings", async () => {
+    const before = timers();
+    async function* stuck(): AsyncGenerator<AnswerEvent> {
+      yield { type: "start", model: DEFAULT_MODEL };
+      await new Promise<void>((resolve) => setTimeout(resolve, 60));
+    }
+    const reader = toNDJSONStream(stuck(), 10).getReader();
+    assert.equal(JSON.parse(decoder.decode((await reader.read()).value)).type, "start");
+    assert.deepEqual(JSON.parse(decoder.decode((await reader.read()).value)), { type: "ping" });
+    await reader.cancel();
+    await sleep(80); // let the generator finish its wait
+    assert.equal(timers(), before, "no timer left after cancel");
+  });
+
+  test("a rejected request starts no ping timer", async () => {
+    const before = timers();
+    const response = await handleAnswer(request({ image: "x" }), ENV);
+    assert.equal(response.status, 400);
+    assert.equal(timers(), before);
   });
 });

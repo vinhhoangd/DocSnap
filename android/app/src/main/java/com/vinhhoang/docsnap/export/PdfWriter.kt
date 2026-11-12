@@ -1,6 +1,9 @@
 package com.vinhhoang.docsnap.export
 
+import java.io.Closeable
 import java.io.File
+import java.io.FileInputStream
+import java.io.FilterInputStream
 import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -95,6 +98,35 @@ data class JpegInfo(val width: Int, val height: Int, val components: Int, val ad
 }
 
 /**
+ * A page image opened once, so its size, JPEG header, EXIF and bytes all come from the same version
+ * of the file. Pages are re-rendered by writing a new file and renaming it over the old one, so an
+ * open file never changes underneath; reading it twice by path could mix two versions.
+ */
+class PageSnapshot(file: File) : Closeable {
+    private val input = FileInputStream(file)
+    private val channel = input.channel
+
+    /** Size of the opened version, in bytes. */
+    val length: Long = channel.size()
+
+    /** A fresh stream over the whole opened version. Closing it does not close the snapshot; use one at a time. */
+    fun open(): InputStream {
+        channel.position(0)
+        val raw = object : FilterInputStream(java.nio.channels.Channels.newInputStream(channel)) {
+            override fun close() = Unit
+        }
+        return raw.buffered(1 shl 16)
+    }
+
+    /** Copies the opened version to `target` (for code that needs a path, like BitmapFactory). */
+    fun copyTo(target: File) {
+        target.outputStream().use { out -> open().copyTo(out, 1 shl 16) }
+    }
+
+    override fun close() = input.close()
+}
+
+/**
  * A minimal PDF 1.4 writer whose pages are JPEG images embedded byte-for-byte (DCTDecode), like
  * the iPhone app's PDFs: no decoding, no quality loss, the PDF is about the size of its JPEGs,
  * and memory use is one 64 KB copy buffer however many pages there are.
@@ -117,6 +149,15 @@ class PdfWriter(private val out: OutputStream, private val pageCount: Int, title
 
     /** Adds the next page: `jpeg` drawn into `rect` on a `pageWidth` × `pageHeight` page. */
     fun addPage(jpeg: File, info: JpegInfo, pageWidth: Float, pageHeight: Float, rect: PdfRect) {
+        // One open: the length and the bytes come from the same version of the file.
+        FileInputStream(jpeg).use { input -> addPage(input, input.channel.size(), info, pageWidth, pageHeight, rect) }
+    }
+
+    /**
+     * Adds the next page from `jpeg`, which must deliver exactly `length` bytes (it is not closed).
+     * `info` must describe these same bytes; see [PageSnapshot].
+     */
+    fun addPage(jpeg: InputStream, length: Long, info: JpegInfo, pageWidth: Float, pageHeight: Float, rect: PdfRect) {
         check(written < pageCount) { "More pages than declared" }
         val n = pageObj(written)
         obj(n, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${num(pageWidth)} ${num(pageHeight)}] " +
@@ -129,7 +170,6 @@ class PdfWriter(private val out: OutputStream, private val pageCount: Int, title
         stream.write(content)
         write("\nendstream\nendobj\n")
 
-        val length = jpeg.length()
         val colour = when (info.components) {
             1 -> "/DeviceGray"
             4 -> "/DeviceCMYK" + if (info.adobeInverted) " /Decode [1 0 1 0 1 0 1 0]" else ""
@@ -138,8 +178,8 @@ class PdfWriter(private val out: OutputStream, private val pageCount: Int, title
         begin(n + 2)
         write("<< /Type /XObject /Subtype /Image /Width ${info.width} /Height ${info.height} /ColorSpace $colour " +
             "/BitsPerComponent 8 /Filter /DCTDecode /Length $length >>\nstream\n")
-        val copied = jpeg.inputStream().use { it.copyTo(stream, 1 shl 16) }
-        if (copied != length) throw IOException("${jpeg.name} changed while exporting")
+        val copied = jpeg.copyTo(stream, 1 shl 16)
+        if (copied != length) throw IOException("A page image changed while exporting")
         write("\nendstream\nendobj\n")
         written++
     }

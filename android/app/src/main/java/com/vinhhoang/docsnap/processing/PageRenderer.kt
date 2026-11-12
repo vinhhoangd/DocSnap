@@ -2,6 +2,7 @@ package com.vinhhoang.docsnap.processing
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ColorSpace
 import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
 import com.vinhhoang.docsnap.model.ScanFilter
@@ -42,9 +43,10 @@ object PageRenderer {
         val (srcW, srcH) = imageSize(original)
         val orientation = exifOrientation(original)
         val sample = sampleSize(srcW, srcH, maxDimension)
-        // Untouched JPEG: keep the bytes (no generation loss, and much faster).
+        // Untouched sRGB JPEG: keep the bytes (no generation loss, and much faster). A wide-gamut
+        // (e.g. Display P3) photo is re-encoded to sRGB, which PDFs and other apps assume.
         if (page.filter == ScanFilter.Original && turns == 0 && sample == 1 && max(srcW, srcH) <= maxDimension &&
-            isUpright(orientation) && isJpeg(original)
+            isUpright(orientation) && isJpeg(original) && isSrgb(original)
         ) {
             writeAtomically(output) { temp -> original.copyTo(temp, overwrite = true) }
             return
@@ -83,6 +85,8 @@ object PageRenderer {
         val options = BitmapFactory.Options().apply {
             inSampleSize = sampleSize(srcW, srcH, maxDimension)
             inPreferredConfig = Bitmap.Config.ARGB_8888
+            // Wide-gamut photos are converted, so filters, JPEGs and PDFs are all plain sRGB.
+            inPreferredColorSpace = SRGB
             inMutable = true
         }
         val decoded = BitmapFactory.decodeFile(file.path, options) ?: throw IOException("Can't decode ${file.name}")
@@ -113,6 +117,16 @@ object PageRenderer {
         return bounds.outWidth to bounds.outHeight
     }
 
+    internal val SRGB: ColorSpace by lazy { ColorSpace.get(ColorSpace.Named.SRGB) }
+
+    /** True if the image is sRGB, or doesn't say (then sRGB is what every reader assumes). */
+    internal fun isSrgb(file: File): Boolean {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.path, bounds)
+        val space = bounds.outColorSpace ?: return true
+        return space == SRGB
+    }
+
     internal fun exifOrientation(file: File): Int = try {
         ExifInterface(file).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
     } catch (e: IOException) {
@@ -122,7 +136,8 @@ object PageRenderer {
     internal fun isUpright(orientation: Int) =
         orientation == ExifInterface.ORIENTATION_NORMAL || orientation == ExifInterface.ORIENTATION_UNDEFINED
 
-    private fun orientationMatrix(orientation: Int) = Matrix().apply {
+    /** The transform that turns an image stored with EXIF `orientation` upright (all eight cases). */
+    internal fun orientationMatrix(orientation: Int) = Matrix().apply {
         when (orientation) {
             ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> setScale(-1f, 1f)
             ExifInterface.ORIENTATION_ROTATE_180 -> setRotate(180f)
