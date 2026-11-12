@@ -2,6 +2,9 @@
 //
 // POST /api/answer  — the iPhone app sends a scanned page; Claude's answer streams back
 //                     as NDJSON lines: {"type":"text","text":"..."} … {"type":"done",…}
+//                     While the stream is open a {"type":"ping"} line goes out every 15 s, so a
+//                     long silent think doesn't trip the client's read timeout. Both apps skip
+//                     line types they don't know, so pings need no opt-in.
 // GET  /api/answer  — health check (does not touch the Anthropic API).
 //
 // The Anthropic API key lives only in this server's environment (ANTHROPIC_API_KEY).
@@ -164,6 +167,61 @@ export function toNDJSONLine(value: unknown): string {
   return JSON.stringify(value).replace(/[\u2028\u2029\u0085]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`) + "\n";
 }
 
+/** How often a {"type":"ping"} line is sent while the answer stream is open. */
+export const KEEP_ALIVE_MS = 15_000;
+
+/**
+ * The NDJSON body for a stream of events, plus a {"type":"ping"} line every `keepAliveMs` while it
+ * is open. Adaptive thinking can stay silent for minutes, and the apps time out a read that waits
+ * too long (Android: 120 s). The timer stops when the events end or the client goes away.
+ */
+export function toNDJSONStream(
+  events: AsyncGenerator<AnswerEvent>,
+  keepAliveMs: number = KEEP_ALIVE_MS,
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const ping = encoder.encode(toNDJSONLine({ type: "ping" }));
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let finished = false;
+  const stop = () => {
+    finished = true;
+    if (timer !== undefined) clearInterval(timer);
+    timer = undefined;
+  };
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      timer = setInterval(() => {
+        if (finished) return;
+        try {
+          controller.enqueue(ping);
+        } catch {
+          stop(); // closed or cancelled under us
+        }
+      }, keepAliveMs);
+    },
+    async pull(controller) {
+      let result: IteratorResult<AnswerEvent>;
+      try {
+        result = await events.next();
+      } catch {
+        // streamAnswer never throws, but the timer must never outlive the stream.
+        result = { done: true, value: undefined };
+      }
+      if (finished) return; // cancelled while waiting
+      if (result.done) {
+        stop();
+        controller.close();
+        return;
+      }
+      controller.enqueue(encoder.encode(toNDJSONLine(result.value)));
+    },
+    async cancel() {
+      stop();
+      await events.return(undefined);
+    },
+  });
+}
+
 function tokenMatches(given: string | null, expected: string | undefined): boolean {
   if (!given || !expected) return false;
   const a = Buffer.from(given);
@@ -197,21 +255,7 @@ export async function handleAnswer(request: Request, env: Env = process.env): Pr
   if (typeof parsed === "string") return json(400, { error: "bad_request", message: parsed });
 
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 2 });
-  const encoder = new TextEncoder();
-  const events = streamAnswer(client, parsed, request.signal);
-  const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      const { value, done } = await events.next();
-      if (done) {
-        controller.close();
-        return;
-      }
-      controller.enqueue(encoder.encode(toNDJSONLine(value)));
-    },
-    async cancel() {
-      await events.return(undefined);
-    },
-  });
+  const stream = toNDJSONStream(streamAnswer(client, parsed, request.signal));
   return new Response(stream, {
     status: 200,
     headers: {
