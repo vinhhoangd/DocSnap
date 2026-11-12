@@ -27,7 +27,8 @@ class DocSnapApp : Application() {
         store = DocumentStore(File(filesDir, "documents"), PageRenderer::render)
         answers = AnswerClient(BuildConfig.API_URL, BuildConfig.APP_TOKEN)
         appScope.launch { store.load() }
-        // Scanner hand-offs and shared exports are temporary.
+        // Scanner hand-offs and shared exports are temporary (nothing is mid-save at launch).
         File(cacheDir, "exports").deleteRecursively()
+        File(cacheDir, "scans").deleteRecursively()
     }
 }

@@ -93,6 +93,7 @@ fun PageViewerScreen(documentId: String, startIndex: Int, onBack: () -> Unit) {
     val app = context.applicationContext as DocSnapApp
     val store = app.store
     val documents by store.documents.collectAsStateWithLifecycle()
+    val storeLoaded by store.loaded.collectAsStateWithLifecycle()
     val doc = documents.firstOrNull { it.id == documentId }
     val scope = rememberCoroutineScope()
 
@@ -105,7 +106,7 @@ fun PageViewerScreen(documentId: String, startIndex: Int, onBack: () -> Unit) {
     // The filter just tapped, shown as selected while it renders (page id to filter).
     var pickedFilter by remember { mutableStateOf<Pair<String, ScanFilter>?>(null) }
 
-    LeaveWhenGone(present = doc != null, onGone = onBack)
+    LeaveWhenGone(present = doc != null, loaded = storeLoaded, onGone = onBack)
     if (doc == null || doc.pages.isEmpty()) return
     val pages = doc.pages
 
@@ -161,7 +162,7 @@ fun PageViewerScreen(documentId: String, startIndex: Int, onBack: () -> Unit) {
                             edit(current) { it.copy(rotation = it.rotation + 1) }
                         }
                         ViewerAction(Icons.Filled.TextFields, R.string.lib_viewer_text, "textButton") { textPageId = current.id }
-                        ViewerAction(Icons.Filled.AutoAwesome, R.string.lib_viewer_answer, "answerButton") { answerPageId = current.id }
+                        ViewerAction(Icons.Filled.AutoAwesome, R.string.answer_button, "answerButton") { answerPageId = current.id }
                         ViewerAction(Icons.Outlined.Delete, R.string.action_delete, "deletePageButton", destructive = true) {
                             deletePageId = current.id
                         }
@@ -229,11 +230,11 @@ fun PageViewerScreen(documentId: String, startIndex: Int, onBack: () -> Unit) {
 
 /** The display name of a filter. */
 fun filterLabel(filter: ScanFilter): Int = when (filter) {
-    ScanFilter.Original -> R.string.lib_filter_original
-    ScanFilter.MagicColor -> R.string.lib_filter_magic_color
-    ScanFilter.Grayscale -> R.string.lib_filter_grayscale
-    ScanFilter.BlackWhite -> R.string.lib_filter_black_white
-    ScanFilter.Lighten -> R.string.lib_filter_lighten
+    ScanFilter.Original -> R.string.filter_original
+    ScanFilter.MagicColor -> R.string.filter_magic_color
+    ScanFilter.Grayscale -> R.string.filter_grayscale
+    ScanFilter.BlackWhite -> R.string.filter_black_white
+    ScanFilter.Lighten -> R.string.filter_lighten
 }
 
 /** The five page looks as big chips; the selected one is checked. Tag: "filter-<raw>". */

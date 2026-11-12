@@ -37,6 +37,10 @@ class DocumentStore(
     /** Newest first (by last change). */
     val documents: StateFlow<List<ScanDocument>> = _documents.asStateFlow()
 
+    private val _loaded = MutableStateFlow(false)
+    /** True once `load()` has read the disk, so "document not found" is real, not "not loaded yet". */
+    val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+
     fun document(id: String): ScanDocument? = _documents.value.firstOrNull { it.id == id }
 
     fun folder(documentId: String) = File(root, documentId)
@@ -52,6 +56,7 @@ class DocumentStore(
                     ?.takeIf { it.id == dir.name }
             }
             publish(docs)
+            _loaded.value = true
         }
     }
 

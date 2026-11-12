@@ -86,12 +86,13 @@ fun DocumentScreen(documentId: String, onBack: () -> Unit, onOpenPage: (document
     val app = context.applicationContext as DocSnapApp
     val vm: DocumentViewModel = viewModel(key = "document-$documentId")
     val documents by app.store.documents.collectAsStateWithLifecycle()
+    val storeLoaded by app.store.loaded.collectAsStateWithLifecycle()
     val doc = documents.firstOrNull { it.id == documentId }
     val busy by vm.busy.collectAsStateWithLifecycle()
     var importing by remember { mutableStateOf(false) }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LeaveWhenGone(present = doc != null, onGone = onBack)
+    LeaveWhenGone(present = doc != null, loaded = storeLoaded, onGone = onBack)
 
     val scanner = rememberScanner(
         onPages = { vm.addPages(documentId, it) },

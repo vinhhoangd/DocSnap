@@ -7,4 +7,10 @@
     <string name="action_share">Chia sẻ</string>
     <string name="action_ok">OK</string>
     <string name="error_generic">Có lỗi xảy ra. Vui lòng thử lại.</string>
+    <!-- Filter names, shared by the viewer, Settings and anywhere else (one name per filter). -->
+    <string name="filter_original">Ảnh gốc</string>
+    <string name="filter_magic_color">Màu rõ nét</string>
+    <string name="filter_grayscale">Ảnh xám</string>
+    <string name="filter_black_white">Đen trắng</string>
+    <string name="filter_lighten">Làm sáng</string>
 </resources>

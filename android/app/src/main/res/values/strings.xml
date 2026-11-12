@@ -9,4 +9,10 @@
     <string name="action_share">Share</string>
     <string name="action_ok">OK</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
+    <!-- Filter names, shared by the viewer, Settings and anywhere else (one name per filter). -->
+    <string name="filter_original">Original</string>
+    <string name="filter_magic_color">Magic Color</string>
+    <string name="filter_grayscale">Grayscale</string>
+    <string name="filter_black_white">B&amp;W</string>
+    <string name="filter_lighten">Lighten</string>
 </resources>

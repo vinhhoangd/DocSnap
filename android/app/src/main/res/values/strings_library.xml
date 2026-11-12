@@ -65,13 +65,7 @@
     <string name="lib_viewer_position">%1$d / %2$d</string>
     <string name="lib_viewer_position_spoken">Page %1$d of %2$d</string>
     <string name="lib_filters">Filters</string>
-    <string name="lib_filter_original">Original</string>
-    <string name="lib_filter_magic_color">Magic Color</string>
-    <string name="lib_filter_grayscale">Grayscale</string>
-    <string name="lib_filter_black_white">B&amp;W</string>
-    <string name="lib_filter_lighten">Lighten</string>
     <string name="lib_viewer_text">Text</string>
-    <string name="lib_viewer_answer">Answer</string>
     <string name="lib_applying">Applying…</string>
     <string name="lib_text_title">Text on this page</string>
     <string name="lib_text_none">No text found on this page.</string>

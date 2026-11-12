@@ -17,11 +17,6 @@
     <string name="settings_section_scanning">Scanning</string>
     <string name="settings_default_filter">Default filter</string>
     <string name="settings_default_filter_footer">Used for new scans. Each page\'s filter can still be changed later.</string>
-    <string name="settings_filter_original">Original</string>
-    <string name="settings_filter_magic_color">Magic Color</string>
-    <string name="settings_filter_grayscale">Grayscale</string>
-    <string name="settings_filter_black_white">Black &amp; White</string>
-    <string name="settings_filter_lighten">Lighten</string>
 
     <string name="settings_section_answers">AI Answers</string>
     <string name="settings_model">AI model</string>

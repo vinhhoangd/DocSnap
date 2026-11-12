@@ -63,13 +63,7 @@
     <string name="lib_viewer_position">%1$d / %2$d</string>
     <string name="lib_viewer_position_spoken">Trang %1$d trên %2$d</string>
     <string name="lib_filters">Bộ lọc</string>
-    <string name="lib_filter_original">Gốc</string>
-    <string name="lib_filter_magic_color">Tăng màu</string>
-    <string name="lib_filter_grayscale">Xám</string>
-    <string name="lib_filter_black_white">Đen trắng</string>
-    <string name="lib_filter_lighten">Làm sáng</string>
     <string name="lib_viewer_text">Chữ</string>
-    <string name="lib_viewer_answer">Giải đáp</string>
     <string name="lib_applying">Đang áp dụng…</string>
     <string name="lib_text_title">Chữ trên trang này</string>
     <string name="lib_text_none">Trang này không có chữ nào.</string>

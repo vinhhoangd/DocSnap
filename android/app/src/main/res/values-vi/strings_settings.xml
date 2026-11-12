@@ -16,11 +16,6 @@
     <string name="settings_section_scanning">Quét</string>
     <string name="settings_default_filter">Bộ lọc mặc định</string>
     <string name="settings_default_filter_footer">Dùng cho các lần quét mới. Sau này vẫn đổi được bộ lọc của từng trang.</string>
-    <string name="settings_filter_original">Ảnh gốc</string>
-    <string name="settings_filter_magic_color">Màu rõ nét</string>
-    <string name="settings_filter_grayscale">Ảnh xám</string>
-    <string name="settings_filter_black_white">Đen trắng</string>
-    <string name="settings_filter_lighten">Làm sáng</string>
 
     <string name="settings_section_answers">Giải bài bằng AI</string>
     <string name="settings_model">Mô hình AI</string>

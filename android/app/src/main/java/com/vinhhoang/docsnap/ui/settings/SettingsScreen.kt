@@ -403,11 +403,11 @@ private val Appearance.label: Int
 
 private val ScanFilter.label: Int
     @StringRes get() = when (this) {
-        ScanFilter.Original -> R.string.settings_filter_original
-        ScanFilter.MagicColor -> R.string.settings_filter_magic_color
-        ScanFilter.Grayscale -> R.string.settings_filter_grayscale
-        ScanFilter.BlackWhite -> R.string.settings_filter_black_white
-        ScanFilter.Lighten -> R.string.settings_filter_lighten
+        ScanFilter.Original -> R.string.filter_original
+        ScanFilter.MagicColor -> R.string.filter_magic_color
+        ScanFilter.Grayscale -> R.string.filter_grayscale
+        ScanFilter.BlackWhite -> R.string.filter_black_white
+        ScanFilter.Lighten -> R.string.filter_lighten
     }
 
 /** Short speed/quality note shown under each model. */
