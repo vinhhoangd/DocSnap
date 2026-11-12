@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.vinhhoang.docsnap.ui.common.ifResumed
 import com.vinhhoang.docsnap.ui.document.DocumentScreen
 import com.vinhhoang.docsnap.ui.library.LibraryScreen
 import com.vinhhoang.docsnap.ui.page.PageViewerScreen
@@ -26,18 +27,20 @@ class MainActivity : ComponentActivity() {
             val appearance by app.settings.appearance.collectAsStateWithLifecycle()
             DocSnapTheme(appearance) {
                 val nav = rememberNavController()
+                // Every navigation runs only from the resumed screen (ifResumed), so a double tap on
+                // Back can't pop past the library and a double tap on a link opens one screen.
                 NavHost(navController = nav, startDestination = Routes.LIBRARY) {
-                    composable(Routes.LIBRARY) {
+                    composable(Routes.LIBRARY) { entry ->
                         LibraryScreen(
-                            onOpenDocument = { nav.navigate(Routes.document(it)) },
-                            onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                            onOpenDocument = { id -> entry.ifResumed { nav.navigate(Routes.document(id)) } },
+                            onOpenSettings = { entry.ifResumed { nav.navigate(Routes.SETTINGS) } },
                         )
                     }
                     composable(Routes.DOCUMENT, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
                         DocumentScreen(
                             documentId = entry.arguments?.getString("id").orEmpty(),
-                            onBack = { nav.popBackStack() },
-                            onOpenPage = { id, index -> nav.navigate(Routes.page(id, index)) },
+                            onBack = { entry.ifResumed { nav.popBackStack() } },
+                            onOpenPage = { id, index -> entry.ifResumed { nav.navigate(Routes.page(id, index)) } },
                         )
                     }
                     composable(
@@ -50,10 +53,12 @@ class MainActivity : ComponentActivity() {
                         PageViewerScreen(
                             documentId = entry.arguments?.getString("id").orEmpty(),
                             startIndex = entry.arguments?.getInt("index") ?: 0,
-                            onBack = { nav.popBackStack() },
+                            onBack = { entry.ifResumed { nav.popBackStack() } },
                         )
                     }
-                    composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
+                    composable(Routes.SETTINGS) { entry ->
+                        SettingsScreen(onBack = { entry.ifResumed { nav.popBackStack() } })
+                    }
                 }
             }
         }

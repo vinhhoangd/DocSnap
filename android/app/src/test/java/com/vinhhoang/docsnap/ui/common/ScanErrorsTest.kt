@@ -40,4 +40,15 @@ class ScanErrorsTest {
         assertEquals(ScanErrorKind.Generic, ScanErrors.forException(null, null))
         assertEquals(ScanErrorKind.Generic, ScanErrors.forException(13, "Internal error"))
     }
+
+    /** "Update Play services" is not a dead end: its message gets an Update button. */
+    @Test fun onlyTheUpdateErrorOffersTheStore() {
+        assertEquals(true, ScanErrors.offersPlayServicesUpdate(ScanErrorKind.PlayServicesUpdate))
+        ScanErrorKind.entries.filter { it != ScanErrorKind.PlayServicesUpdate }.forEach {
+            assertEquals(it.name, false, ScanErrors.offersPlayServicesUpdate(it))
+        }
+        // Both ways of hearing "too old" lead to the button.
+        assertEquals(true, ScanErrors.offersPlayServicesUpdate(ScanErrors.forException(207, null)))
+        assertEquals(true, ScanErrors.offersPlayServicesUpdate(ScanErrors.forPlayServicesStatus(2)!!))
+    }
 }

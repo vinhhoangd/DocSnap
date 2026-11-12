@@ -43,14 +43,19 @@ class LibraryContentTest {
     private val renamed = mutableListOf<Pair<String, String>>()
     private val deleted = mutableListOf<String>()
 
-    private fun show(docs: List<ScanDocument>, layout: LibraryLayout = LibraryLayout.Grid, busy: Boolean = false) {
+    private fun show(
+        docs: List<ScanDocument>,
+        layout: LibraryLayout = LibraryLayout.Grid,
+        busy: String? = null,
+        loaded: Boolean = true,
+    ) {
         compose.setContent {
             DocSnapTheme {
                 LibraryContent(
                     documents = docs,
                     layout = layout,
                     thumbnail = { File("/nonexistent/${it.id}.jpg") to 0 },
-                    busy = busy,
+                    busyMessage = busy,
                     onToggleLayout = {},
                     onScan = { scans += Unit },
                     onOpen = { opened += it },
@@ -58,6 +63,7 @@ class LibraryContentTest {
                     onDelete = { deleted += it },
                     onOpenSettings = {},
                     now = now,
+                    loaded = loaded,
                 )
             }
         }
@@ -164,8 +170,22 @@ class LibraryContentTest {
     }
 
     @Test fun busyOverlayShowsSaving() {
-        show(listOf(bill), busy = true)
+        show(listOf(bill), busy = s(R.string.lib_saving))
         compose.onNodeWithTag("busyOverlay").assertIsDisplayed()
         compose.onNodeWithText(s(R.string.lib_saving)).assertIsDisplayed()
+    }
+
+    @Test fun busyOverlayShowsScannerOpening() {
+        show(emptyList(), busy = s(R.string.lib_scan_opening))
+        compose.onNodeWithText(s(R.string.lib_scan_opening)).assertIsDisplayed()
+    }
+
+    /** Cold start: until the documents are read, show a spinner, not "no documents yet". */
+    @Test fun loadingShowsSpinnerNotEmptyState() {
+        show(emptyList(), loaded = false)
+        compose.onNodeWithTag("libraryLoading").assertIsDisplayed()
+        compose.onNodeWithTag("emptyLibrary").assertDoesNotExist()
+        compose.onNodeWithText(s(R.string.lib_empty_title)).assertDoesNotExist()
+        compose.onNodeWithTag("emptyScanButton").assertDoesNotExist()
     }
 }

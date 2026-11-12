@@ -15,9 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,14 +44,39 @@ class DocumentViewModel(application: Application) : AndroidViewModel(application
     private val app = application as DocSnapApp
     private val store get() = app.store
 
-    private val _busy = MutableStateFlow<DocumentBusy?>(null)
-    val busy: StateFlow<DocumentBusy?> = _busy.asStateFlow()
+    private val gate = BusyGate<DocumentBusy>()
+    val busy: StateFlow<DocumentBusy?> = gate.busy
 
     private val _events = Channel<DocumentEvent>(Channel.BUFFERED)
     val events: Flow<DocumentEvent> = _events.receiveAsFlow()
 
-    fun addPages(documentId: String, files: List<File>) = job(DocumentBusy.Saving, R.string.lib_error_save_scan, cleanup = files) {
-        withContext(NonCancellable) { store.addPages(documentId, files, app.settings.defaultFilter.value) }
+    /**
+     * Saves scanned pages into the document, then deletes the temporary files. Never dropped: it
+     * waits for a running job (e.g. a PDF) and, after the app was restarted on this screen, for the
+     * documents to load. If the pages still can't be added, the user is told.
+     */
+    fun addPages(documentId: String, files: List<File>) {
+        if (files.isEmpty()) return
+        viewModelScope.launch {
+            var started = false
+            try {
+                gate.awaitStart(DocumentBusy.Saving)
+                started = true
+                store.loaded.first { it }
+                if (store.document(documentId) == null) {
+                    _events.send(DocumentEvent.Message(R.string.lib_error_save_scan))
+                    return@launch
+                }
+                withContext(NonCancellable) { store.addPages(documentId, files, app.settings.defaultFilter.value) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                _events.trySend(DocumentEvent.Message(R.string.lib_error_save_scan))
+            } finally {
+                withContext(NonCancellable + Dispatchers.IO) { files.forEach { it.delete() } }
+                if (started) gate.finish()
+            }
+        }
     }
 
     fun sharePdf(documentId: String) = job(DocumentBusy.MakingPdf, R.string.lib_share_error) {
@@ -98,12 +122,8 @@ class DocumentViewModel(application: Application) : AndroidViewModel(application
     }
 
     /** A job with the busy overlay. Only one runs at a time; a second tap while busy is ignored. */
-    private fun job(kind: DocumentBusy, @StringRes failure: Int, cleanup: List<File> = emptyList(), block: suspend () -> Unit) {
-        if (_busy.value != null) {
-            cleanup.forEach { it.delete() }
-            return
-        }
-        _busy.value = kind
+    private fun job(kind: DocumentBusy, @StringRes failure: Int, block: suspend () -> Unit) {
+        if (!gate.tryStart(kind)) return
         viewModelScope.launch {
             try {
                 block()
@@ -112,8 +132,7 @@ class DocumentViewModel(application: Application) : AndroidViewModel(application
             } catch (_: Throwable) {
                 _events.trySend(DocumentEvent.Message(failure))
             } finally {
-                if (cleanup.isNotEmpty()) withContext(NonCancellable + Dispatchers.IO) { cleanup.forEach { it.delete() } }
-                _busy.value = null
+                gate.finish()
             }
         }
     }

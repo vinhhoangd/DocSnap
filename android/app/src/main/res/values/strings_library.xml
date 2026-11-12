@@ -38,11 +38,15 @@
     <string name="lib_scan_error_no_space">The phone is out of space. Delete some photos or apps and try again.</string>
     <string name="lib_scan_error_generic">Couldn\'t open the scanner. Please try again.</string>
     <string name="lib_error_save_scan">Couldn\'t save the scanned pages. Please try again.</string>
+    <string name="lib_scan_opening">Opening the scanner…</string>
+    <string name="lib_update_play_services">Update</string>
+    <string name="lib_not_now">Not now</string>
+    <string name="lib_loading">Loading documents…</string>
 
     <!-- Document -->
     <string name="lib_doc_add_pages">Add pages</string>
     <string name="lib_doc_share_pdf">Share PDF</string>
-    <string name="lib_doc_share_images">Share images (JPEG)</string>
+    <string name="lib_doc_share_images">Share as Images</string>
     <string name="lib_doc_copy_text">Copy all text</string>
     <string name="lib_doc_delete">Delete document</string>
     <string name="lib_doc_no_text">No text found in this document.</string>

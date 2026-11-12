@@ -2,6 +2,8 @@ package com.vinhhoang.docsnap.ui.common
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.os.Build
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,34 +28,57 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/** Decoded page bitmaps, keyed by file + page version + size, sized to an eighth of the app's heap. */
+/**
+ * Decoded page bitmaps, keyed by file + page version + size. Sized from the app's heap (see
+ * [ImageSampling.cacheBytes]); full-screen pages too big for it are decoded but not kept.
+ */
 object PageImageCache {
-    private val maxKb = (Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()
-    private val cache = object : LruCache<String, Bitmap>(maxKb) {
+    private val maxHeap = Runtime.getRuntime().maxMemory()
+    private val maxBytes = ImageSampling.cacheBytes(maxHeap)
+    private val cache = object : LruCache<String, Bitmap>((maxBytes / 1024).toInt()) {
         override fun sizeOf(key: String, value: Bitmap) = value.allocationByteCount / 1024
     }
 
+    /** Longest side the full-screen viewer should ask for on this phone. */
+    val viewerMaxSide: Int = ImageSampling.viewerMaxSide(maxHeap)
+
     fun get(key: String): Bitmap? = cache.get(key)
 
-    /** Decodes `file` with its longest side at most about `maxSide` px. Call off the main thread. */
+    /** Decodes `file` with its longest side at most `maxSide` px. Call off the main thread. */
     fun load(file: File, version: Int, maxSide: Int): Bitmap? {
         val key = ImageSampling.cacheKey(file.absolutePath, version, maxSide)
         cache.get(key)?.let { return it }
         if (!file.exists()) return null
+        val bitmap = try {
+            decode(file, maxSide)
+        } catch (_: OutOfMemoryError) {
+            // Free the thumbnails and try once more at half the size.
+            cache.evictAll()
+            runCatching { decode(file, maxSide / 2) }.getOrNull()
+        } ?: return null
+        if (ImageSampling.fitsCache(bitmap.allocationByteCount.toLong(), maxBytes)) cache.put(key, bitmap)
+        return bitmap
+    }
+
+    private fun decode(file: File, maxSide: Int): Bitmap? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Decodes straight to the exact size (sampling internally), so a 4096 px page never
+            // needs a full-size bitmap.
+            return ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
+                val (w, h) = ImageSampling.targetSize(info.size.width, info.size.height, maxSide)
+                decoder.setTargetSize(w, h)
+                // Software bitmaps: drawable everywhere (also in screenshots and tests).
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            }
+        }
+        // Android 8: power-of-two sampling, never larger than maxSide (may be up to half of it).
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
         val options = BitmapFactory.Options().apply {
             inSampleSize = ImageSampling.inSampleSize(bounds.outWidth, bounds.outHeight, maxSide)
         }
-        val bitmap = try {
-            BitmapFactory.decodeFile(file.absolutePath, options)
-        } catch (_: OutOfMemoryError) {
-            cache.evictAll()
-            null
-        } ?: return null
-        cache.put(key, bitmap)
-        return bitmap
+        return BitmapFactory.decodeFile(file.absolutePath, options)
     }
 }
 

@@ -48,7 +48,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,8 +68,11 @@ import com.vinhhoang.docsnap.DocSnapApp
 import com.vinhhoang.docsnap.R
 import com.vinhhoang.docsnap.model.ScanDocument
 import com.vinhhoang.docsnap.model.ScanPage
+import androidx.lifecycle.Lifecycle
+import com.vinhhoang.docsnap.scan.openPlayServicesInStore
 import com.vinhhoang.docsnap.scan.rememberScanner
 import com.vinhhoang.docsnap.ui.common.BusyOverlay
+import com.vinhhoang.docsnap.ui.common.CollectEvents
 import com.vinhhoang.docsnap.ui.common.ConfirmDeleteDialog
 import com.vinhhoang.docsnap.ui.common.LeaveWhenGone
 import com.vinhhoang.docsnap.ui.common.MessageDialog
@@ -89,27 +91,30 @@ fun DocumentScreen(documentId: String, onBack: () -> Unit, onOpenPage: (document
     val storeLoaded by app.store.loaded.collectAsStateWithLifecycle()
     val doc = documents.firstOrNull { it.id == documentId }
     val busy by vm.busy.collectAsStateWithLifecycle()
-    var importing by remember { mutableStateOf(false) }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
+    // The message is a scanner error that the Play Store can fix ("Update" button).
+    var offerUpdate by rememberSaveable { mutableStateOf(false) }
 
     LeaveWhenGone(present = doc != null, loaded = storeLoaded, onGone = onBack)
 
     val scanner = rememberScanner(
         onPages = { vm.addPages(documentId, it) },
-        onError = { message = it },
-        onImporting = { importing = it },
+        onError = {
+            message = context.getString(it.message)
+            offerUpdate = it.offersPlayServicesUpdate
+        },
     )
 
-    LaunchedEffect(vm) {
-        vm.events.collect { event ->
-            when (event) {
-                is DocumentEvent.Share ->
-                    if (!Sharing.shareFiles(context, event.files, event.mime, event.subject)) {
-                        message = context.getString(R.string.lib_no_share_app)
-                    }
-                is DocumentEvent.CopyText -> Sharing.copyText(context, event.label, event.text)
-                is DocumentEvent.Message -> message = context.getString(event.text)
-            }
+    // Only while the screen is visible: a share sheet started from a stopped activity never shows.
+    CollectEvents(vm.events, Lifecycle.State.STARTED) { event ->
+        offerUpdate = false
+        when (event) {
+            is DocumentEvent.Share ->
+                if (!Sharing.shareFiles(context, event.files, event.mime, event.subject)) {
+                    message = context.getString(R.string.lib_no_share_app)
+                }
+            is DocumentEvent.CopyText -> Sharing.copyText(context, event.label, event.text)
+            is DocumentEvent.Message -> message = context.getString(event.text)
         }
     }
 
@@ -117,7 +122,7 @@ fun DocumentScreen(documentId: String, onBack: () -> Unit, onOpenPage: (document
         DocumentContent(
             doc = doc,
             pageFile = { app.store.processedFile(doc.id, it.id) },
-            busyMessage = (if (importing) DocumentBusy.Saving else busy)?.let { stringResource(it.message) },
+            busyMessage = (scanner.busyMessage ?: busy?.message)?.let { stringResource(it) },
             onBack = onBack,
             onOpenPage = { onOpenPage(doc.id, it) },
             onAddPages = scanner.launch,
@@ -132,7 +137,14 @@ fun DocumentScreen(documentId: String, onBack: () -> Unit, onOpenPage: (document
         )
     }
 
-    message?.let { MessageDialog(it, onDismiss = { message = null }) }
+    message?.let {
+        MessageDialog(
+            it,
+            onDismiss = { message = null; offerUpdate = false },
+            actionLabel = if (offerUpdate) stringResource(R.string.lib_update_play_services) else null,
+            onAction = { openPlayServicesInStore(context) },
+        )
+    }
 }
 
 /** The document UI without the store or view model, so it can be tested with plain data. */

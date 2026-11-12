@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,7 +49,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,8 +74,11 @@ import com.vinhhoang.docsnap.DocSnapApp
 import com.vinhhoang.docsnap.R
 import com.vinhhoang.docsnap.data.LibraryLayout
 import com.vinhhoang.docsnap.model.ScanDocument
+import androidx.lifecycle.Lifecycle
+import com.vinhhoang.docsnap.scan.openPlayServicesInStore
 import com.vinhhoang.docsnap.scan.rememberScanner
 import com.vinhhoang.docsnap.ui.common.BusyOverlay
+import com.vinhhoang.docsnap.ui.common.CollectEvents
 import com.vinhhoang.docsnap.ui.common.ConfirmDeleteDialog
 import com.vinhhoang.docsnap.ui.common.DateSection
 import com.vinhhoang.docsnap.ui.common.DateSections
@@ -94,32 +98,45 @@ fun LibraryScreen(onOpenDocument: (String) -> Unit, onOpenSettings: () -> Unit) 
     val app = context.applicationContext as DocSnapApp
     val vm: LibraryViewModel = viewModel()
     val documents by app.store.documents.collectAsStateWithLifecycle()
+    val loaded by app.store.loaded.collectAsStateWithLifecycle()
     val layout by app.settings.libraryLayout.collectAsStateWithLifecycle()
     val saving by vm.busy.collectAsStateWithLifecycle()
-    var importing by remember { mutableStateOf(false) }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
+    // The message is a scanner error that the Play Store can fix ("Update" button).
+    var offerUpdate by rememberSaveable { mutableStateOf(false) }
 
     val scanner = rememberScanner(
         onPages = { vm.saveScan(it) },
-        onError = { message = it },
-        onImporting = { importing = it },
+        onError = {
+            message = context.getString(it.message)
+            offerUpdate = it.offersPlayServicesUpdate
+        },
     )
 
-    LaunchedEffect(vm) {
-        vm.events.collect { event ->
-            when (event) {
-                is LibraryEvent.OpenDocument -> onOpenDocument(event.id)
-                LibraryEvent.SaveFailed -> message = context.getString(R.string.lib_error_save_scan)
-                LibraryEvent.ChangeFailed -> message = context.getString(R.string.error_generic)
+    // RESUMED: opening the new document is a navigation, which only the resumed screen may do.
+    CollectEvents(vm.events, Lifecycle.State.RESUMED) { event ->
+        when (event) {
+            is LibraryEvent.OpenDocument -> onOpenDocument(event.id)
+            LibraryEvent.SaveFailed -> {
+                message = context.getString(R.string.lib_error_save_scan)
+                offerUpdate = false
+            }
+            LibraryEvent.ChangeFailed -> {
+                message = context.getString(R.string.error_generic)
+                offerUpdate = false
             }
         }
     }
 
     LibraryContent(
         documents = documents,
+        loaded = loaded,
         layout = layout,
         thumbnail = { doc -> doc.pages.firstOrNull()?.let { app.store.processedFile(doc.id, it.id) to it.version } },
-        busy = saving || importing,
+        busyMessage = when {
+            saving -> R.string.lib_saving
+            else -> scanner.busyMessage
+        }?.let { stringResource(it) },
         onToggleLayout = {
             app.settings.setLibraryLayout(if (layout == LibraryLayout.Grid) LibraryLayout.List else LibraryLayout.Grid)
         },
@@ -130,7 +147,14 @@ fun LibraryScreen(onOpenDocument: (String) -> Unit, onOpenSettings: () -> Unit) 
         onOpenSettings = onOpenSettings,
     )
 
-    message?.let { MessageDialog(it, onDismiss = { message = null }) }
+    message?.let {
+        MessageDialog(
+            it,
+            onDismiss = { message = null; offerUpdate = false },
+            actionLabel = if (offerUpdate) stringResource(R.string.lib_update_play_services) else null,
+            onAction = { openPlayServicesInStore(context) },
+        )
+    }
 }
 
 /**
@@ -143,7 +167,7 @@ fun LibraryContent(
     documents: List<ScanDocument>,
     layout: LibraryLayout,
     thumbnail: (ScanDocument) -> Pair<File, Int>?,
-    busy: Boolean,
+    busyMessage: String?,
     onToggleLayout: () -> Unit,
     onScan: () -> Unit,
     onOpen: (String) -> Unit,
@@ -152,6 +176,7 @@ fun LibraryContent(
     onOpenSettings: () -> Unit,
     now: Long = System.currentTimeMillis(),
     zone: ZoneId = ZoneId.systemDefault(),
+    loaded: Boolean = true,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var renamingId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -207,7 +232,10 @@ fun LibraryContent(
                 }
             },
         ) { padding ->
-            if (documents.isEmpty()) {
+            if (!loaded) {
+                // Cold start: the documents are still being read. Not "no documents yet".
+                LoadingLibrary(Modifier.padding(padding))
+            } else if (documents.isEmpty()) {
                 EmptyLibrary(onScan, Modifier.padding(padding))
             } else {
                 Column(Modifier.padding(padding).fillMaxSize()) {
@@ -234,7 +262,7 @@ fun LibraryContent(
                 }
             }
         }
-        if (busy) BusyOverlay(stringResource(R.string.lib_saving))
+        busyMessage?.let { BusyOverlay(it) }
     }
 
     // A dialog for a document that was deleted meanwhile simply isn't shown.
@@ -276,6 +304,20 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .testTag("searchField"),
     )
+}
+
+@Composable
+private fun LoadingLibrary(modifier: Modifier = Modifier) {
+    val description = stringResource(R.string.lib_loading)
+    Box(
+        modifier
+            .fillMaxSize()
+            .semantics { contentDescription = description }
+            .testTag("libraryLoading"),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
+    }
 }
 
 @Composable

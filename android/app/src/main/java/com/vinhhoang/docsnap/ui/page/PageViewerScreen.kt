@@ -63,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vinhhoang.docsnap.DocSnapApp
@@ -76,15 +77,13 @@ import com.vinhhoang.docsnap.ui.common.ConfirmDeleteDialog
 import com.vinhhoang.docsnap.ui.common.LeaveWhenGone
 import com.vinhhoang.docsnap.ui.common.MessageDialog
 import com.vinhhoang.docsnap.ui.common.PageImage
+import com.vinhhoang.docsnap.ui.common.PageImageCache
 import com.vinhhoang.docsnap.ui.share.Sharing
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-/** Longest side the viewer decodes; enough for a sharp 2.5× zoom on a phone without huge bitmaps. */
-private const val VIEWER_MAX_SIDE = 2560
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -188,7 +187,7 @@ fun PageViewerScreen(documentId: String, startIndex: Int, onBack: () -> Unit) {
                         file = store.processedFile(documentId, page.id),
                         version = page.version,
                         contentDescription = stringResource(R.string.lib_page_number, index + 1),
-                        maxSide = VIEWER_MAX_SIDE,
+                        maxSide = PageImageCache.viewerMaxSide,
                         modifier = Modifier.fillMaxSize().padding(12.dp),
                     )
                 }
@@ -289,7 +288,9 @@ private fun androidx.compose.foundation.layout.RowScope.ViewerAction(
                 style = MaterialTheme.typography.labelLarge,
                 color = color,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                // Two lines, so long Vietnamese labels at large font sizes wrap instead of clipping.
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
